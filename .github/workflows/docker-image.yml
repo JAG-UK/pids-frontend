@@ -20,7 +20,7 @@ jobs:
     - name: Log in to Digital Ocean Container Registry
       if: github.event_name == 'push'
       run: |
-          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
+          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com --username "jon.geater@fidl.tech" --password-stdin
 
     - name: Extract metadata
       id: meta

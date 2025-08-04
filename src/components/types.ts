@@ -1,0 +1,55 @@
+export interface Dataset {
+  id: string;
+  name: string;
+  origin: string;
+  uploadDate: string;
+  status: 'pending' | 'approved' | 'rejected';
+  verifiedDate?: string; // Date when the dataset was verified/approved
+  description: string;
+  size: string;
+  format: string;
+  tags: string[];
+  downloadUrl: string;
+  files?: FileStructure[]; // File structure for explore feature
+}
+
+export interface FileStructure {
+  id: string;
+  name: string;
+  type: 'file' | 'directory';
+  size?: string;
+  lastModified?: string;
+  mimeType?: string;
+  children?: FileStructure[];
+  content?: string; // For preview content
+}
+
+export interface AdminDashboardProps {
+  datasets: Dataset[];
+  pendingDatasets: Dataset[];
+  onApproveDataset: (id: string) => void;
+  onRejectDataset: (id: string) => void;
+  onRemoveDataset: (id: string) => void;
+}
+
+export interface PublicDirectoryProps {
+  datasets: Dataset[];
+  onExploreDataset: (dataset: Dataset) => void;
+}
+
+export interface DatasetCardProps {
+  dataset: Dataset;
+  isAdmin?: boolean;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onRemove?: (id: string) => void;
+  onDownloadCache?: (id: string) => void;
+  onExplore?: (dataset: Dataset) => void;
+}
+
+export interface ExploreDatasetProps {
+  dataset: Dataset;
+  onBack: () => void;
+}
+
+export type ViewMode = 'directory' | 'explore';

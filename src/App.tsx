@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Badge } from '@components/ui/badge';
@@ -8,6 +8,12 @@ import { AdminDashboard } from '@components/AdminDashboard';
 import { PublicDirectory } from '@components/PublicDirectory';
 import { ExploreDataset } from '@components/ExploreDataset';
 import { Dataset, ViewMode } from '@components/types';
+import { ErrorBoundary } from '@components/ErrorBoundary';
+import { LoadingSpinner } from '@components/LoadingSpinner';
+import { SearchBar } from '@components/SearchBar';
+import { PerformanceMonitor } from '@components/PerformanceMonitor';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import { mockApi } from './utils/api';
 
 // Mock file structures for explore feature
 const mockFileStructures = {
@@ -122,11 +128,24 @@ export const mockDatasets: Dataset[] = [
 ];
 
 export default function App() {
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useLocalStorage('isAdminMode', false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [datasets, setDatasets] = useState<Dataset[]>(mockDatasets);
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<{
+    format: string[];
+    tags: string[];
+    dateRange: 'all' | 'week' | 'month' | 'year';
+    sizeRange: 'all' | 'small' | 'medium' | 'large';
+  }>({
+    format: [],
+    tags: [],
+    dateRange: 'all',
+    sizeRange: 'all'
+  });
 
   const approvedDatasets = useMemo(() => 
     datasets.filter(d => d.status === 'approved'), 
@@ -137,6 +156,45 @@ export default function App() {
     datasets.filter(d => d.status === 'pending'), 
     [datasets]
   );
+
+  // Filter and search datasets
+  const filteredDatasets = useMemo(() => {
+    let filtered = approvedDatasets;
+
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(dataset =>
+        dataset.name.toLowerCase().includes(query) ||
+        dataset.description.toLowerCase().includes(query) ||
+        dataset.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply format filter
+    if (filters.format.length > 0) {
+      filtered = filtered.filter(dataset =>
+        filters.format.includes(dataset.format)
+      );
+    }
+
+    // Apply tags filter
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(dataset =>
+        dataset.tags.some(tag => filters.tags.includes(tag))
+      );
+    }
+
+    return filtered;
+  }, [approvedDatasets, searchQuery, filters]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: any) => {
+    setFilters(newFilters);
+  }, []);
 
   const handleApproveDataset = (id: string) => {
     const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
@@ -200,83 +258,102 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          {!isAdminMode && (
-            <div className="mb-6">
-              {/* Hero Header for Public Interface */}
-              <div className="text-center py-8 px-4 bg-chart-1/5 rounded-lg mb-6">
-                <div className="flex items-center justify-center gap-4 mb-4">
-                  <div className="bg-chart-1 text-white px-6 py-3 rounded-lg">
-                    <span className="text-2xl font-bold tracking-tight">PIDS</span>
-                  </div>
-                  <div className="text-left">
-                    <h1 className="text-3xl font-bold text-foreground">
-                      Public Interest Dataset Service
-                    </h1>
-                    <p className="text-lg text-muted-foreground mt-1">
-                      Discover, explore, and access verified public datasets from trusted sources
-                    </p>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4">
+            {!isAdminMode && (
+              <div className="mb-6">
+                {/* Hero Header for Public Interface */}
+                <div className="text-center py-8 px-4 rounded-lg mb-6" style={{ backgroundColor: '#f7f5fe' }}>
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="bg-chart-1 text-white px-6 py-3 rounded-lg">
+                      <span className="text-2xl font-bold tracking-tight">PIDS</span>
+                    </div>
+                    <div className="text-left">
+                      <h1 className="text-3xl font-bold text-foreground">
+                        Public Interest Dataset Service
+                      </h1>
+                      <p className="text-lg text-muted-foreground mt-1">
+                        Discover, explore, and access verified public datasets from trusted sources
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium">
-              {isAdminMode ? 'Admin Dashboard' : viewMode === 'explore' ? 'Dataset Explorer' : 'Dataset Directory'}
-            </h2>
-            <div className="flex items-center gap-4">
-              {!isAdminMode && viewMode === 'directory' && (
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                  <span>{approvedDatasets.length} datasets available</span>
-                  <span>{datasets.reduce((acc, d) => acc + parseFloat(d.size), 0).toFixed(1)} GB total</span>
-                </div>
-              )}
-              <Button
-                variant={isAdminMode ? "default" : "outline"}
-                className={isAdminMode ? "bg-chart-1 hover:bg-chart-1/90 text-white" : ""}
-                onClick={() => {
-                  if (isAdminMode) {
-                    setIsAdminMode(false);
-                    setIsAuthenticated(false);
-                  } else {
-                    setIsAdminMode(true);
-                  }
-                  setViewMode('directory');
-                  setSelectedDataset(null);
-                }}
-              >
-                {isAdminMode ? 'Exit Admin' : 'Admin'}
-              </Button>
+            )}
+            
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-medium">
+                {isAdminMode ? 'Admin Dashboard' : viewMode === 'explore' ? 'Dataset Explorer' : 'Dataset Directory'}
+              </h2>
+              <div className="flex items-center gap-4">
+                {!isAdminMode && viewMode === 'directory' && (
+                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                    <span>{filteredDatasets.length} datasets available</span>
+                    <span>{datasets.reduce((acc, d) => acc + parseFloat(d.size), 0).toFixed(1)} GB total</span>
+                  </div>
+                )}
+                <Button
+                  variant={isAdminMode ? "default" : "outline"}
+                  className={isAdminMode ? "bg-chart-1 hover:bg-chart-1/90 text-white" : ""}
+                  onClick={() => {
+                    if (isAdminMode) {
+                      setIsAdminMode(false);
+                      setIsAuthenticated(false);
+                    } else {
+                      setIsAdminMode(true);
+                    }
+                    setViewMode('directory');
+                    setSelectedDataset(null);
+                  }}
+                >
+                  {isAdminMode ? 'Exit Admin' : 'Admin'}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto p-4">
-        {isAdminMode ? (
-          <AdminDashboard
-            datasets={datasets}
-            pendingDatasets={pendingDatasets}
-            onApproveDataset={handleApproveDataset}
-            onRejectDataset={handleRejectDataset}
-            onRemoveDataset={handleRemoveDataset}
-          />
-        ) : viewMode === 'explore' && selectedDataset ? (
-          <ExploreDataset
-            dataset={selectedDataset}
-            onBack={handleBackToDirectory}
-          />
-        ) : (
-          <PublicDirectory 
-            datasets={approvedDatasets} 
-            onExploreDataset={handleExploreDataset}
-          />
-        )}
-      </main>
-    </div>
+        <main className="container mx-auto p-4">
+          {!isAdminMode && viewMode === 'directory' && (
+            <div className="mb-6">
+              <SearchBar
+                onSearch={handleSearch}
+                onFiltersChange={handleFiltersChange}
+                placeholder="Search datasets by name, description, or tags..."
+                className="max-w-2xl"
+              />
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" text="Loading datasets..." />
+            </div>
+          ) : isAdminMode ? (
+            <AdminDashboard
+              datasets={datasets}
+              pendingDatasets={pendingDatasets}
+              onApproveDataset={handleApproveDataset}
+              onRejectDataset={handleRejectDataset}
+              onRemoveDataset={handleRemoveDataset}
+            />
+          ) : viewMode === 'explore' && selectedDataset ? (
+            <ExploreDataset
+              dataset={selectedDataset}
+              onBack={handleBackToDirectory}
+            />
+          ) : (
+            <PublicDirectory 
+              datasets={filteredDatasets} 
+              onExploreDataset={handleExploreDataset}
+            />
+          )}
+        </main>
+
+        <PerformanceMonitor />
+      </div>
+    </ErrorBoundary>
   );
 }

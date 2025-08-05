@@ -22,6 +22,7 @@ export interface FileStructure {
   mimeType?: string;
   children?: FileStructure[];
   content?: string; // For preview content
+  imageUrl?: string; // For image file previews
 }
 
 export interface AdminDashboardProps {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -8,7 +8,6 @@ import { ExploreDataset } from '@components/ExploreDataset';
 import { Dataset, ViewMode } from '@components/types';
 import { ErrorBoundary } from '@components/ErrorBoundary';
 import { LoadingSpinner } from '@components/LoadingSpinner';
-import { SearchBar } from '@components/SearchBar';
 import { PerformanceMonitor } from '@components/PerformanceMonitor';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
@@ -131,18 +130,6 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [isLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<{
-    format: string[];
-    tags: string[];
-    dateRange: 'all' | 'week' | 'month' | 'year';
-    sizeRange: 'all' | 'small' | 'medium' | 'large';
-  }>({
-    format: [],
-    tags: [],
-    dateRange: 'all',
-    sizeRange: 'all'
-  });
 
   const approvedDatasets = useMemo(() => 
     datasets.filter(d => d.status === 'approved'), 
@@ -154,44 +141,7 @@ export default function App() {
     [datasets]
   );
 
-  // Filter and search datasets
-  const filteredDatasets = useMemo(() => {
-    let filtered = approvedDatasets;
 
-    // Apply search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(dataset =>
-        dataset.name.toLowerCase().includes(query) ||
-        dataset.description.toLowerCase().includes(query) ||
-        dataset.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply format filter
-    if (filters.format.length > 0) {
-      filtered = filtered.filter(dataset =>
-        filters.format.includes(dataset.format)
-      );
-    }
-
-    // Apply tags filter
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter(dataset =>
-        dataset.tags.some(tag => filters.tags.includes(tag))
-      );
-    }
-
-    return filtered;
-  }, [approvedDatasets, searchQuery, filters]);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
-
-  const handleFiltersChange = useCallback((newFilters: any) => {
-    setFilters(newFilters);
-  }, []);
 
   const handleApproveDataset = (id: string) => {
     const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
@@ -287,7 +237,7 @@ export default function App() {
               <div className="flex items-center gap-4">
                 {!isAdminMode && viewMode === 'directory' && (
                   <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                    <span>{filteredDatasets.length} datasets available</span>
+                    <span>{approvedDatasets.length} datasets available</span>
                     <span>{datasets.reduce((acc, d) => acc + parseFloat(d.size), 0).toFixed(1)} GB total</span>
                   </div>
                 )}
@@ -313,17 +263,6 @@ export default function App() {
         </header>
 
         <main className="container mx-auto p-4">
-          {!isAdminMode && viewMode === 'directory' && (
-            <div className="mb-6">
-              <SearchBar
-                onSearch={handleSearch}
-                onFiltersChange={handleFiltersChange}
-                placeholder="Search datasets by name, description, or tags..."
-                className="max-w-2xl"
-              />
-            </div>
-          )}
-
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner size="lg" text="Loading datasets..." />
@@ -341,12 +280,12 @@ export default function App() {
               dataset={selectedDataset}
               onBack={handleBackToDirectory}
             />
-          ) : (
-            <PublicDirectory 
-              datasets={filteredDatasets} 
-              onExploreDataset={handleExploreDataset}
-            />
-          )}
+                      ) : (
+              <PublicDirectory 
+                datasets={approvedDatasets} 
+                onExploreDataset={handleExploreDataset}
+              />
+            )}
         </main>
 
         <PerformanceMonitor />

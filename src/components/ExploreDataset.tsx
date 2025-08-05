@@ -124,6 +124,31 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     }
     
     if (mimeType.includes('image')) {
+      if (file.imageUrl) {
+        return (
+          <div className="flex items-center justify-center bg-muted rounded overflow-hidden">
+            <img 
+              src={file.imageUrl} 
+              alt={file.name}
+              className="max-w-full max-h-96 object-contain"
+              onError={(e) => {
+                // Fallback if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden flex items-center justify-center h-64 w-full">
+              <div className="text-center">
+                <FileImage className="h-16 w-16 mx-auto mb-4 text-chart-3" />
+                <p className="text-sm text-muted-foreground">Image not found</p>
+                <p className="text-xs text-muted-foreground mt-1">Please add the image file to the public folder</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
       return (
         <div className="flex items-center justify-center h-64 bg-muted rounded">
           <div className="text-center">

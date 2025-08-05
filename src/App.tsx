@@ -51,6 +51,45 @@ const mockFileStructures = {
         { id: 'summary', name: 'summary_report.pdf', type: 'file' as const, size: '2.1 MB', mimeType: 'application/pdf' }
       ]
     }
+  ],
+  '6': [
+    {
+      id: 'cats-root',
+      name: 'cat_photography_collection',
+      type: 'directory' as const,
+      children: [
+        {
+          id: 'portraits',
+          name: 'portraits',
+          type: 'directory' as const,
+          children: [
+            { id: 'cat1', name: 'persian_cat.jpg', type: 'file' as const, size: '2.8 MB', mimeType: 'image/jpeg', content: 'A beautiful Persian cat with long fluffy fur sitting regally on a velvet cushion. The cat has striking blue eyes and a luxurious white coat with subtle gray markings.', imageUrl: '/images/cats/portraits/persian_cat.jpg' },
+            { id: 'cat2', name: 'siamese_cat.jpg', type: 'file' as const, size: '3.1 MB', mimeType: 'image/jpeg', content: 'An elegant Siamese cat with distinctive pointed coloring - cream body with dark brown ears, face, paws, and tail. The cat is perched on a windowsill looking out thoughtfully.', imageUrl: '/images/cats/portraits/siamese_cat.jpg' },
+            { id: 'cat3', name: 'orange_tabby.jpg', type: 'file' as const, size: '2.5 MB', mimeType: 'image/jpeg', content: 'A playful orange tabby cat with distinctive striped markings, bright green eyes, and a white belly. The cat is in a playful pose with ears perked up.', imageUrl: '/images/cats/portraits/orange_tabby.jpg' }
+          ]
+        },
+        {
+          id: 'action',
+          name: 'action_shots',
+          type: 'directory' as const,
+          children: [
+            { id: 'cat4', name: 'jumping_cat.jpg', type: 'file' as const, size: '3.4 MB', mimeType: 'image/jpeg', content: 'A dynamic action shot of a cat mid-leap, captured in perfect focus. The cat appears to be jumping from one surface to another with graceful form.', imageUrl: '/images/cats/action_shots/jumping_cat.jpg' },
+            { id: 'cat5', name: 'playing_cat.jpg', type: 'file' as const, size: '2.9 MB', mimeType: 'image/jpeg', content: 'A cat playing with a toy mouse, showing natural hunting instincts. The cat is crouched low with focused attention on the toy.', imageUrl: '/images/cats/action_shots/playing_cat.jpg' }
+          ]
+        },
+        {
+          id: 'cute',
+          name: 'cute_moments',
+          type: 'directory' as const,
+          children: [
+            { id: 'cat6', name: 'sleeping_kitten.jpg', type: 'file' as const, size: '2.2 MB', mimeType: 'image/jpeg', content: 'An adorable sleeping kitten curled up in a cozy basket. The kitten has soft, fluffy fur and looks completely peaceful and content.', imageUrl: '/images/cats/cute_moments/sleeping_kitten.jpg' },
+            { id: 'cat7', name: 'yawning_cat.jpg', type: 'file' as const, size: '2.7 MB', mimeType: 'image/jpeg', content: 'A cat caught mid-yawn, showing its tiny teeth and pink tongue. The expression is both funny and endearing.', imageUrl: '/images/cats/cute_moments/yawning_cat.jpg' }
+          ]
+        },
+        { id: 'metadata', name: 'photo_metadata.json', type: 'file' as const, size: '15 KB', mimeType: 'application/json', content: '{\n  "collection_info": {\n    "title": "Cat Photography Collection",\n    "photographer": "Sarah Johnson",\n    "date_created": "2024-01-15",\n    "total_photos": 7\n  },\n  "categories": {\n    "portraits": 3,\n    "action_shots": 2,\n    "cute_moments": 2\n  },\n  "technical_details": {\n    "camera": "Canon EOS R5",\n    "lens": "70-200mm f/2.8",\n    "resolution": "45MP",\n    "format": "RAW + JPEG"\n  }\n}' },
+        { id: 'readme', name: 'README.md', type: 'file' as const, size: '8 KB', mimeType: 'text/markdown', content: '# Cat Photography Collection\n\nA curated collection of high-quality cat photographs showcasing various breeds, poses, and moments.\n\n## Categories\n- **Portraits**: Professional shots of different cat breeds\n- **Action Shots**: Dynamic photos capturing cats in motion\n- **Cute Moments**: Adorable and heartwarming cat moments\n\n## Technical Details\n- Shot with Canon EOS R5\n- 45MP resolution\n- Professional lighting setup\n- Natural and studio environments\n\n## Usage\nThese images are perfect for:\n- Pet photography portfolios\n- Animal welfare campaigns\n- Educational materials\n- Social media content' }
+      ]
+    }
   ]
 };
 
@@ -120,6 +159,20 @@ export const mockDatasets: Dataset[] = [
     format: 'PDF',
     tags: ['energy', 'consumption', 'sustainability'],
     downloadUrl: '#'
+  },
+  {
+    id: '6',
+    name: 'Cat Photography Collection',
+    origin: 'Sarah Johnson Photography',
+    uploadDate: '2024-01-15',
+    status: 'approved',
+    verifiedDate: '2024-01-16',
+    description: 'A curated collection of high-quality cat photographs showcasing various breeds, poses, and moments. Perfect for pet photography portfolios and educational materials.',
+    size: '18.7 MB',
+    format: 'JPEG',
+    tags: ['photography', 'cats', 'pets', 'images', 'portraits'],
+    downloadUrl: '#',
+    files: mockFileStructures['6']
   }
 ];
 

@@ -20,24 +20,13 @@ jobs:
       run: |
           echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com --username "jon.geater@fidl.tech" --password-stdin
 
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: registry.digitalocean.com/fidl-containers/pids-app
-        tags: |
-          type=ref,event=branch
-          type=raw,value={{date 'YYYY-MM-DD'}}
-          type=sha,prefix={{branch}}-
-
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         target: production
         push: ${{ github.event_name == 'push' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: registry.digitalocean.com/fidl-containers/pids-app:main
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

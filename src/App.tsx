@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
-import { Badge } from '@components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import { AdminDashboard } from '@components/AdminDashboard';
 import { PublicDirectory } from '@components/PublicDirectory';
 import { ExploreDataset } from '@components/ExploreDataset';
@@ -13,7 +11,6 @@ import { LoadingSpinner } from '@components/LoadingSpinner';
 import { SearchBar } from '@components/SearchBar';
 import { PerformanceMonitor } from '@components/PerformanceMonitor';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { mockApi } from './utils/api';
 
 // Mock file structures for explore feature
 const mockFileStructures = {
@@ -133,7 +130,7 @@ export default function App() {
   const [datasets, setDatasets] = useState<Dataset[]>(mockDatasets);
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{
     format: string[];

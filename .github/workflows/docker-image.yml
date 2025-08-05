@@ -41,9 +41,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Build and type check
+    - name: Type check
       run: |
-        docker build -t pids-app .
-        docker run --rm pids-app npm run type-check
+        docker build --target builder -t pids-app-builder .
+        docker run --rm pids-app-builder npm run type-check
 
 

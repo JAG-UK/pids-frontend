@@ -4,11 +4,7 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-interface ApiError {
-  message: string;
-  status: number;
-  code?: string;
-}
+
 
 class ApiClient {
   private baseURL: string;

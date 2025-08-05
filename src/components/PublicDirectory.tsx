@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
+
 import { DatasetCard } from './DatasetCard';
 import { PublicDirectoryProps } from './types';
 import { Search, Grid, List } from 'lucide-react';

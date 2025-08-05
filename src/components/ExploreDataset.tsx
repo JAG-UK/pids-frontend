@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
@@ -19,7 +19,7 @@ import {
 
 export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   const [selectedFile, setSelectedFile] = useState<FileStructure | null>(null);
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
+
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const getFileIcon = (file: FileStructure) => {

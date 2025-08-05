@@ -1,64 +1,75 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent } from './ui/card';
-
+import { SearchBar } from './SearchBar';
 import { DatasetCard } from './DatasetCard';
 import { PublicDirectoryProps } from './types';
-import { Search, Grid, List } from 'lucide-react';
+import { Grid, List } from 'lucide-react';
 
 export function PublicDirectory({ datasets, onExploreDataset }: PublicDirectoryProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [formatFilter, setFormatFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<{
+    format: string[];
+    tags: string[];
+    dateRange: 'all' | 'week' | 'month' | 'year';
+    sizeRange: 'all' | 'small' | 'medium' | 'large';
+  }>({
+    format: [],
+    tags: [],
+    dateRange: 'all',
+    sizeRange: 'all'
+  });
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
   const filteredDatasets = useMemo(() => {
-    return datasets.filter(dataset => {
-      const matchesSearch = dataset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           dataset.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           dataset.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           dataset.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesFormat = formatFilter === 'all' || dataset.format.toLowerCase() === formatFilter.toLowerCase();
-      
-      return matchesSearch && matchesFormat;
-    });
-  }, [datasets, searchTerm, formatFilter]);
+    let filtered = datasets;
 
-  const availableFormats = useMemo(() => {
-    const formats = [...new Set(datasets.map(d => d.format))];
-    return formats.sort();
-  }, [datasets]);
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(dataset =>
+        dataset.name.toLowerCase().includes(query) ||
+        dataset.description.toLowerCase().includes(query) ||
+        dataset.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply format filter
+    if (filters.format.length > 0) {
+      filtered = filtered.filter(dataset =>
+        filters.format.includes(dataset.format)
+      );
+    }
+
+    // Apply tags filter
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(dataset =>
+        dataset.tags.some(tag => filters.tags.includes(tag))
+      );
+    }
+
+    return filtered;
+  }, [datasets, searchQuery, filters]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: any) => {
+    setFilters(newFilters);
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search datasets, origins, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full sm:w-80"
-            />
-          </div>
-          
-          <Select value={formatFilter} onValueChange={setFormatFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Format" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Formats</SelectItem>
-              {availableFormats.map(format => (
-                <SelectItem key={format} value={format.toLowerCase()}>
-                  {format}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex-1">
+          <SearchBar
+            onSearch={handleSearch}
+            onFiltersChange={handleFiltersChange}
+            placeholder="Search datasets, origins, or tags..."
+            className="max-w-2xl"
+          />
         </div>
         
         <div className="flex items-center gap-2">

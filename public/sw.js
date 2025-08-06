@@ -2,8 +2,6 @@ const CACHE_NAME = 'pids-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/favicon.svg'
 ];
 
@@ -13,7 +11,13 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
+        // Only cache the essential files that we know exist
         return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('Cache addAll failed:', error);
+        // Continue even if caching fails
+        return Promise.resolve();
       })
   );
 });
@@ -26,11 +30,14 @@ self.addEventListener('fetch', (event) => {
         // Return cached version or fetch from network
         return response || fetch(event.request);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('Fetch failed:', error);
         // Return offline page if both cache and network fail
         if (event.request.destination === 'document') {
           return caches.match('/index.html');
         }
+        // Return a fallback response for other requests
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
       })
   );
 });

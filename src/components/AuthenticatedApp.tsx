@@ -178,7 +178,7 @@ export const mockDatasets: Dataset[] = [
 
 export function AuthenticatedApp() {
   console.log('🚀 AuthenticatedApp component rendered');
-  const { isAuthenticated, isLoading: authLoading, login, logout, user, hasRole } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, login, logout, user, hasRole, keycloak } = useAuth();
   const [isAdminMode, setIsAdminMode] = useLocalStorage('isAdminMode', false);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
@@ -189,10 +189,13 @@ export function AuthenticatedApp() {
   useEffect(() => {
     const loadDatasets = async () => {
       console.log('🔄 AuthenticatedApp: loadDatasets called');
+      console.log('🔍 AuthenticatedApp: Auth state:', { isAuthenticated, isAdminMode, hasToken: !!keycloak?.token });
       setIsLoading(true);
       try {
-        console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets()...');
-        const result = await apiClient.getDatasets();
+        // Get token if user is authenticated
+        const token = keycloak?.token;
+        console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none');
+        const result = await apiClient.getDatasets('', { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
         console.log('📊 AuthenticatedApp: loadDatasets result:', result);
         console.log('📊 AuthenticatedApp: Number of datasets in result:', result.datasets?.length || 0);
         console.log('📊 AuthenticatedApp: Datasets array:', result.datasets);
@@ -216,7 +219,7 @@ export function AuthenticatedApp() {
     };
 
     loadDatasets();
-  }, []);
+  }, [isAuthenticated, isAdminMode, keycloak]); // Reload when auth state changes
 
   const approvedDatasets = useMemo(() => {
     console.log('🔍 AuthenticatedApp: Filtering approved datasets from:', datasets);
@@ -232,21 +235,42 @@ export function AuthenticatedApp() {
     return pending;
   }, [datasets]);
 
-  const handleApproveDataset = (id: string) => {
-    const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    setDatasets(prev => prev.map(d => 
-      d.id === id ? { 
-        ...d, 
-        status: 'approved' as const, 
-        verifiedDate: currentDate 
-      } : d
-    ));
+  const handleApproveDataset = async (id: string) => {
+    try {
+      const token = keycloak?.token;
+      console.log('🔄 Approving dataset:', id, 'with token:', token ? 'present' : 'none');
+      
+      const updatedDataset = await apiClient.approveDataset(id, token);
+      if (updatedDataset) {
+        setDatasets(prev => prev.map(d => 
+          d.id === id ? updatedDataset : d
+        ));
+        console.log('✅ Dataset approved successfully:', updatedDataset);
+      } else {
+        console.error('❌ Failed to approve dataset:', id);
+      }
+    } catch (error) {
+      console.error('❌ Error approving dataset:', error);
+    }
   };
 
-  const handleRejectDataset = (id: string) => {
-    setDatasets(prev => prev.map(d => 
-      d.id === id ? { ...d, status: 'rejected' as const } : d
-    ));
+  const handleRejectDataset = async (id: string) => {
+    try {
+      const token = keycloak?.token;
+      console.log('🔄 Rejecting dataset:', id, 'with token:', token ? 'present' : 'none');
+      
+      const updatedDataset = await apiClient.rejectDataset(id, token);
+      if (updatedDataset) {
+        setDatasets(prev => prev.map(d => 
+          d.id === id ? updatedDataset : d
+        ));
+        console.log('✅ Dataset rejected successfully:', updatedDataset);
+      } else {
+        console.error('❌ Failed to reject dataset:', id);
+      }
+    } catch (error) {
+      console.error('❌ Error rejecting dataset:', error);
+    }
   };
 
   const handleRemoveDataset = (id: string) => {

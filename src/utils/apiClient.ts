@@ -1,173 +1,119 @@
-import { Dataset, SearchFilters } from '../components/types';
+import { Dataset, SearchFilters, FileStructure } from '../components/types';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+const USE_MOCK_DATA = (import.meta as any).env?.VITE_USE_MOCK_DATA === 'true';
 
 // Mock data (moved from App.tsx)
 const mockDatasets: Dataset[] = [
   {
     id: "1",
-    title: "Climate Research Data",
+    name: "Climate Research Data",
+    origin: "admin",
+    uploadDate: "2024-01-15",
+    status: "pending",
+    verifiedDate: "2024-01-15",
     description: "Comprehensive climate data collected from various research stations across the globe. Includes temperature, humidity, and atmospheric pressure readings.",
     format: "CSV",
-    size: 2048576,
+    size: "2.0 MB",
     tags: ["climate", "research", "environmental"],
-    dateCreated: "2024-01-15",
-    dateUpdated: "2024-01-15",
-    fileStructure: [
+    downloadUrl: "#",
+    files: [
       {
+        id: "temp-data",
         name: "temperature_data.csv",
         type: "file",
-        size: 1024000,
-        path: "/temperature_data.csv"
+        size: "1.0 MB",
+        mimeType: "text/csv"
       },
       {
+        id: "humidity-data",
         name: "humidity_data.csv",
         type: "file",
-        size: 1024576,
-        path: "/humidity_data.csv"
+        size: "1.0 MB",
+        mimeType: "text/csv"
       }
     ]
   },
   {
     id: "2",
-    title: "Urban Traffic Patterns",
+    name: "Urban Traffic Patterns",
+    origin: "admin",
+    uploadDate: "2024-02-20",
+    status: "pending",
+    verifiedDate: "2024-02-20",
     description: "Traffic flow data from major metropolitan areas. Contains vehicle counts, speed measurements, and congestion indicators.",
     format: "JSON",
-    size: 1536000,
+    size: "1.5 MB",
     tags: ["traffic", "urban", "transportation"],
-    dateCreated: "2024-02-20",
-    dateUpdated: "2024-02-20",
-    fileStructure: [
+    downloadUrl: "#",
+    files: [
       {
+        id: "traffic-flow",
         name: "traffic_flow.json",
         type: "file",
-        size: 1536000,
-        path: "/traffic_flow.json"
+        size: "1.5 MB",
+        mimeType: "application/json"
       }
     ]
   },
   {
     id: "3",
-    title: "Cat Photography Collection",
+    name: "Cat Photography Collection",
+    origin: "admin",
+    uploadDate: "2024-03-10",
+    status: "pending",
+    verifiedDate: "2024-03-10",
     description: "A curated collection of high-quality cat photographs from various breeds and settings. Perfect for machine learning training or artistic reference.",
     format: "JPEG",
-    size: 52428800,
+    size: "50.0 MB",
     tags: ["photography", "cats", "images", "animals"],
-    dateCreated: "2024-03-10",
-    dateUpdated: "2024-03-10",
-    fileStructure: [
+    downloadUrl: "#",
+    files: [
       {
+        id: "images",
         name: "images",
         type: "directory",
-        size: 0,
-        path: "/images",
         children: [
           {
+            id: "cat1",
             name: "cat1.jpg",
             type: "file",
-            size: 2048576,
-            path: "/images/cat1.jpg",
+            size: "2.0 MB",
+            mimeType: "image/jpeg",
             imageUrl: "/api/files/cat1.jpg"
           },
           {
+            id: "cat2",
             name: "cat2.jpg",
             type: "file",
-            size: 1876544,
-            path: "/images/cat2.jpg",
+            size: "1.8 MB",
+            mimeType: "image/jpeg",
             imageUrl: "/api/files/cat2.jpg"
           },
           {
+            id: "cat3",
             name: "cat3.jpg",
             type: "file",
-            size: 2150400,
-            path: "/images/cat3.jpg",
+            size: "2.1 MB",
+            mimeType: "image/jpeg",
             imageUrl: "/api/files/cat3.jpg"
           },
           {
+            id: "cat4",
             name: "cat4.jpg",
             type: "file",
-            size: 1984512,
-            path: "/images/cat4.jpg",
+            size: "1.9 MB",
+            mimeType: "image/jpeg",
             imageUrl: "/api/files/cat4.jpg"
           },
           {
+            id: "cat5",
             name: "cat5.jpg",
             type: "file",
-            size: 2232320,
-            path: "/images/cat5.jpg",
+            size: "2.1 MB",
+            mimeType: "image/jpeg",
             imageUrl: "/api/files/cat5.jpg"
-          }
-        ]
-      },
-      {
-        name: "metadata.json",
-        type: "file",
-        size: 1024,
-        path: "/metadata.json"
-      }
-    ]
-  },
-  {
-    id: "4",
-    title: "Financial Market Analysis",
-    description: "Historical stock market data with technical indicators and trading signals. Includes price movements, volume analysis, and market sentiment metrics.",
-    format: "Parquet",
-    size: 4194304,
-    tags: ["finance", "trading", "stocks", "analysis"],
-    dateCreated: "2024-01-30",
-    dateUpdated: "2024-01-30",
-    fileStructure: [
-      {
-        name: "market_data.parquet",
-        type: "file",
-        size: 4194304,
-        path: "/market_data.parquet"
-      }
-    ]
-  },
-  {
-    id: "5",
-    title: "Medical Imaging Dataset",
-    description: "Collection of medical scans including X-rays, CT scans, and MRI images. Anonymized patient data for research purposes.",
-    format: "DICOM",
-    size: 104857600,
-    tags: ["medical", "imaging", "healthcare", "research"],
-    dateCreated: "2024-02-15",
-    dateUpdated: "2024-02-15",
-    fileStructure: [
-      {
-        name: "xray_scans",
-        type: "directory",
-        size: 0,
-        path: "/xray_scans",
-        children: [
-          {
-            name: "scan001.dcm",
-            type: "file",
-            size: 2097152,
-            path: "/xray_scans/scan001.dcm"
-          },
-          {
-            name: "scan002.dcm",
-            type: "file",
-            size: 2097152,
-            path: "/xray_scans/scan002.dcm"
-          }
-        ]
-      },
-      {
-        name: "ct_scans",
-        type: "directory",
-        size: 0,
-        path: "/ct_scans",
-        children: [
-          {
-            name: "ct001.dcm",
-            type: "file",
-            size: 4194304,
-            path: "/ct_scans/ct001.dcm"
           }
         ]
       }
@@ -212,7 +158,7 @@ const transformDataset = (apiDataset: any): Dataset => {
       name: apiDataset.title,
       origin: apiDataset.createdBy || 'Unknown',
       uploadDate: apiDataset.dateCreated ? new Date(apiDataset.dateCreated).toISOString().split('T')[0] : '',
-      status: 'approved' as const, // All datasets from API are considered approved
+      status: apiDataset.status || 'pending', // Use actual status from database
       verifiedDate: apiDataset.dateUpdated ? new Date(apiDataset.dateUpdated).toISOString().split('T')[0] : '',
       description: apiDataset.description,
       size: formatBytes(apiDataset.size),
@@ -290,7 +236,7 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
-        dataset.title.toLowerCase().includes(query) ||
+        dataset.name.toLowerCase().includes(query) ||
         dataset.description.toLowerCase().includes(query) ||
         dataset.tags.some(tag => tag.toLowerCase().includes(query));
       
@@ -298,8 +244,8 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
     }
 
     // Format filter
-    if (filters.format && filters.format !== 'all') {
-      if (dataset.format !== filters.format) return false;
+    if (filters.format && filters.format.length > 0) {
+      if (!filters.format.includes(dataset.format)) return false;
     }
 
     // Tags filter
@@ -310,23 +256,16 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
       if (!hasMatchingTag) return false;
     }
 
-    // Date range filter
-    if (filters.dateRange) {
-      const datasetDate = new Date(dataset.dateCreated);
-      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
-      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
-      
-      if (startDate && datasetDate < startDate) return false;
-      if (endDate && datasetDate > endDate) return false;
+    // Date range filter (simplified for now)
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      // TODO: Implement date range filtering
+      // For now, just pass through
     }
 
-    // Size range filter
-    if (filters.sizeRange) {
-      const datasetSize = dataset.size;
-      const minSize = filters.sizeRange.min || 0;
-      const maxSize = filters.sizeRange.max || Infinity;
-      
-      if (datasetSize < minSize || datasetSize > maxSize) return false;
+    // Size range filter (simplified for now)
+    if (filters.sizeRange && filters.sizeRange !== 'all') {
+      // TODO: Implement size range filtering
+      // For now, just pass through
     }
 
     return true;
@@ -335,7 +274,7 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
 
 // Mock API functions
 const mockApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = {}, page: number = 1, limit: number = 10): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10): Promise<PaginatedDatasets> {
     // Simulate network delay
     await delay(300);
     
@@ -388,18 +327,44 @@ const mockApi = {
     
     mockDatasets.splice(index, 1);
     return true;
+  },
+
+  async approveDataset(id: string): Promise<Dataset | null> {
+    await delay(400);
+    const index = mockDatasets.findIndex(dataset => dataset.id === id);
+    if (index === -1) return null;
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    mockDatasets[index] = { 
+      ...mockDatasets[index], 
+      status: 'approved' as const,
+      verifiedDate: currentDate
+    };
+    return mockDatasets[index];
+  },
+
+  async rejectDataset(id: string): Promise<Dataset | null> {
+    await delay(400);
+    const index = mockDatasets.findIndex(dataset => dataset.id === id);
+    if (index === -1) return null;
+    
+    mockDatasets[index] = { 
+      ...mockDatasets[index], 
+      status: 'rejected' as const
+    };
+    return mockDatasets[index];
   }
 };
 
 // Real API functions
 const realApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = {}, page: number = 1, limit: number = 10): Promise<PaginatedDatasets> {
-    console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit });
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
+    console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token });
     
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (filters.format && filters.format !== 'all') params.append('format', filters.format);
+      if (filters.format && filters.format.length > 0) params.append('format', filters.format.join(','));
       if (filters.tags && filters.tags.length > 0) params.append('tags', filters.tags.join(','));
       params.append('page', page.toString());
       params.append('limit', limit.toString());
@@ -407,7 +372,18 @@ const realApi = {
       const url = `${API_BASE_URL}/datasets?${params}`;
       console.log('🌐 Fetching from URL:', url);
 
-      const response = await fetch(url);
+      // Prepare headers
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add Authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔑 Adding Authorization header');
+      }
+
+      const response = await fetch(url, { headers });
       console.log('📡 Response status:', response.status, response.statusText);
       
       if (!response.ok) {
@@ -450,8 +426,16 @@ const realApi = {
     }
   },
 
-  async getDataset(id: string): Promise<Dataset | null> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${id}`);
+  async getDataset(id: string, token?: string): Promise<Dataset | null> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/datasets/${id}`, { headers });
     
     if (response.status === 404) {
       return null;
@@ -470,12 +454,18 @@ const realApi = {
     return transformDataset(result.data);
   },
 
-  async createDataset(dataset: Omit<Dataset, 'id'>): Promise<Dataset> {
+  async createDataset(dataset: Omit<Dataset, 'id'>, token?: string): Promise<Dataset> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/datasets`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(dataset),
     });
     
@@ -492,12 +482,18 @@ const realApi = {
     return result.data;
   },
 
-  async updateDataset(id: string, updates: Partial<Dataset>): Promise<Dataset | null> {
+  async updateDataset(id: string, updates: Partial<Dataset>, token?: string): Promise<Dataset | null> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/datasets/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(updates),
     });
     
@@ -518,9 +514,18 @@ const realApi = {
     return result.data;
   },
 
-  async deleteDataset(id: string): Promise<boolean> {
+  async deleteDataset(id: string, token?: string): Promise<boolean> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/datasets/${id}`, {
       method: 'DELETE',
+      headers,
     });
     
     if (response.status === 404) {
@@ -538,17 +543,79 @@ const realApi = {
     }
 
     return true;
+  },
+
+  async approveDataset(id: string, token?: string): Promise<Dataset | null> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/datasets/${id}/approve`, {
+      method: 'PUT',
+      headers,
+    });
+    
+    if (response.status === 404) {
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<Dataset> = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to approve dataset');
+    }
+
+    return transformDataset(result.data);
+  },
+
+  async rejectDataset(id: string, token?: string): Promise<Dataset | null> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/datasets/${id}/reject`, {
+      method: 'PUT',
+      headers,
+    });
+    
+    if (response.status === 404) {
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const result: ApiResponse<Dataset> = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to reject dataset');
+    }
+
+    return transformDataset(result.data);
   }
 };
 
 // Main API client that switches between real and mock
 export const apiClient = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = {}, page: number = 1, limit: number = 10): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
     try {
       if (USE_MOCK_DATA) {
         return await mockApi.getDatasets(searchQuery, filters, page, limit);
       } else {
-        return await realApi.getDatasets(searchQuery, filters, page, limit);
+        return await realApi.getDatasets(searchQuery, filters, page, limit, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
@@ -556,12 +623,12 @@ export const apiClient = {
     }
   },
 
-  async getDataset(id: string): Promise<Dataset | null> {
+  async getDataset(id: string, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
         return await mockApi.getDataset(id);
       } else {
-        return await realApi.getDataset(id);
+        return await realApi.getDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
@@ -569,12 +636,12 @@ export const apiClient = {
     }
   },
 
-  async createDataset(dataset: Omit<Dataset, 'id'>): Promise<Dataset> {
+  async createDataset(dataset: Omit<Dataset, 'id'>, token?: string): Promise<Dataset> {
     try {
       if (USE_MOCK_DATA) {
         return await mockApi.createDataset(dataset);
       } else {
-        return await realApi.createDataset(dataset);
+        return await realApi.createDataset(dataset, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
@@ -582,12 +649,12 @@ export const apiClient = {
     }
   },
 
-  async updateDataset(id: string, updates: Partial<Dataset>): Promise<Dataset | null> {
+  async updateDataset(id: string, updates: Partial<Dataset>, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
         return await mockApi.updateDataset(id, updates);
       } else {
-        return await realApi.updateDataset(id, updates);
+        return await realApi.updateDataset(id, updates, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
@@ -595,16 +662,42 @@ export const apiClient = {
     }
   },
 
-  async deleteDataset(id: string): Promise<boolean> {
+  async deleteDataset(id: string, token?: string): Promise<boolean> {
     try {
       if (USE_MOCK_DATA) {
         return await mockApi.deleteDataset(id);
       } else {
-        return await realApi.deleteDataset(id);
+        return await realApi.deleteDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
       return await mockApi.deleteDataset(id);
+    }
+  },
+
+  async approveDataset(id: string, token?: string): Promise<Dataset | null> {
+    try {
+      if (USE_MOCK_DATA) {
+        return await mockApi.approveDataset(id);
+      } else {
+        return await realApi.approveDataset(id, token);
+      }
+    } catch (error) {
+      console.warn('Real API failed, falling back to mock data:', error);
+      return await mockApi.approveDataset(id);
+    }
+  },
+
+  async rejectDataset(id: string, token?: string): Promise<Dataset | null> {
+    try {
+      if (USE_MOCK_DATA) {
+        return await mockApi.rejectDataset(id);
+      } else {
+        return await realApi.rejectDataset(id, token);
+      }
+    } catch (error) {
+      console.warn('Real API failed, falling back to mock data:', error);
+      return await mockApi.rejectDataset(id);
     }
   }
 };

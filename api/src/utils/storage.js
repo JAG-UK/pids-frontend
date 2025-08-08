@@ -82,14 +82,23 @@ export const uploadFile = async (file, objectName) => {
 };
 
 export const getFileUrl = (objectName, expiresIn = 3600) => {
-  const client = getMinIOClient();
   const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
   
   try {
-    return client.presignedGetObject(bucketName, objectName, expiresIn);
+    // Create a client with external hostname for presigned URLs
+    const externalClient = new Client({
+      endPoint: process.env.MINIO_EXTERNAL_ENDPOINT || 'localhost',
+      port: parseInt(process.env.MINIO_EXTERNAL_PORT) || 9000,
+      useSSL: false, // Use HTTP for local development
+      accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+      secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+    });
+    
+    return externalClient.presignedGetObject(bucketName, objectName, expiresIn);
   } catch (error) {
     console.error('Error generating file URL:', error);
-    throw error;
+    // Fallback to direct MinIO URL if presigned URL fails
+    return `http://localhost:9000/${bucketName}/${objectName}`;
   }
 };
 

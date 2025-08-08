@@ -26,7 +26,9 @@ services:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/pids
       - MINIO_ENDPOINT=minio
+      - MINIO_EXTERNAL_ENDPOINT=localhost
       - MINIO_PORT=9000
+      - MINIO_EXTERNAL_PORT=9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=pids-datasets

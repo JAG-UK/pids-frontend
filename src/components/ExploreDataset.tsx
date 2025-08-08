@@ -5,7 +5,10 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ExploreDatasetProps, FileStructure } from './types';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
   ArrowLeft, 
   Folder, 
@@ -19,7 +22,11 @@ import {
   ChevronRight,
   Search,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Code,
+  FileCode,
+  BookOpen,
+  ExternalLink
 } from 'lucide-react';
 
 // Enhanced CSV Table Component
@@ -102,56 +109,51 @@ function CSVTableView({ content }: { content: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Search and Controls */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search in data..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">CSV Data</Badge>
+          <span className="text-sm text-muted-foreground">
+            {filteredAndSortedData.length} rows
+          </span>
         </div>
-        <Badge variant="outline">
-          {filteredAndSortedData.length} rows
-        </Badge>
+        <Input
+          placeholder="Search data..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-64"
+        />
       </div>
-
-      {/* Table */}
-      <div className="border rounded-lg">
-        <ScrollArea className="h-[60vh]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {parsedData.headers.map((header, index) => (
-                  <TableHead key={header} className="cursor-pointer hover:bg-accent" onClick={() => handleSort(index)}>
-                    <div className="flex items-center gap-2">
-                      {header}
-                      {sortColumn === index && (
-                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                      )}
-                    </div>
-                  </TableHead>
+      
+      <ScrollArea className="h-[60vh]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {parsedData.headers.map((header, index) => (
+                <TableHead key={header} className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort(index)}>
+                  <div className="flex items-center gap-2">
+                    {header}
+                    {sortColumn === index && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedData.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {parsedData.headers.map((header) => (
+                  <TableCell key={header} className="font-mono text-sm">
+                    {row[header] || ''}
+                  </TableCell>
                 ))}
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {parsedData.headers.map(header => (
-                    <TableCell key={header} className="max-w-[200px] truncate">
-                      {row[header] || ''}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
-
-      {/* Pagination */}
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+      
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
@@ -186,7 +188,7 @@ function JSONViewer({ content }: { content: string }) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['root']));
   const [searchTerm, setSearchTerm] = useState('');
 
-  const parsedJson = useMemo(() => {
+  const parsedData = useMemo(() => {
     try {
       return JSON.parse(content);
     } catch {
@@ -206,110 +208,268 @@ function JSONViewer({ content }: { content: string }) {
 
   const renderJsonValue = (value: any, path: string, level: number = 0): JSX.Element => {
     const indent = level * 20;
-    
-    if (value === null) {
-      return <span className="text-muted-foreground">null</span>;
-    }
-    
-    if (typeof value === 'boolean') {
-      return <span className={value ? 'text-green-600' : 'text-red-600'}>{value.toString()}</span>;
-    }
-    
-    if (typeof value === 'number') {
-      return <span className="text-blue-600">{value}</span>;
-    }
-    
-    if (typeof value === 'string') {
-      return <span className="text-green-800">"{value}"</span>;
-    }
-    
-    if (Array.isArray(value)) {
-      const isExpanded = expandedPaths.has(path);
-      return (
-        <div>
-          <div 
-            className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded"
-            onClick={() => togglePath(path)}
-            style={{ marginLeft: `${indent}px` }}
-          >
-            <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-            <span className="text-purple-600">[</span>
-            <span className="text-muted-foreground">{value.length} items</span>
-            {!isExpanded && <span className="text-muted-foreground">...</span>}
-            <span className="text-purple-600">]</span>
-          </div>
-          {isExpanded && (
-            <div>
-              {value.map((item, index) => (
-                <div key={index}>
-                  {renderJsonValue(item, `${path}.${index}`, level + 1)}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    if (typeof value === 'object') {
-      const isExpanded = expandedPaths.has(path);
+    const isExpanded = expandedPaths.has(path);
+
+    if (typeof value === 'object' && value !== null) {
+      const isArray = Array.isArray(value);
       const keys = Object.keys(value);
+      
       return (
-        <div>
+        <div key={path}>
           <div 
-            className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded"
+            className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
             onClick={() => togglePath(path)}
-            style={{ marginLeft: `${indent}px` }}
+            style={{ marginLeft: indent }}
           >
-            <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-            <span className="text-purple-600">{'{'}</span>
-            <span className="text-muted-foreground">{keys.length} properties</span>
-            {!isExpanded && <span className="text-muted-foreground">...</span>}
-            <span className="text-purple-600">{'}'}</span>
+            <ChevronRight 
+              className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
+            />
+            <span className="font-mono text-sm">
+              {isArray ? '[' : '{'}
+              {!isExpanded && keys.length > 0 && (
+                <span className="text-muted-foreground">
+                  {keys.length} {isArray ? 'items' : 'properties'}
+                </span>
+              )}
+              {!isExpanded && '}'}
+            </span>
           </div>
+          
           {isExpanded && (
             <div>
-              {keys.map(key => (
-                <div key={key}>
-                  <div style={{ marginLeft: `${indent + 20}px` }}>
-                    <span className="text-blue-800 font-medium">"{key}": </span>
-                    {renderJsonValue(value[key], `${path}.${key}`, level + 1)}
+              {keys.map((key, index) => {
+                const childPath = `${path}.${key}`;
+                const childValue = value[key];
+                return (
+                  <div key={childPath}>
+                    <div className="flex items-center gap-2" style={{ marginLeft: indent + 20 }}>
+                      <span className="font-mono text-sm text-blue-600">"{key}":</span>
+                      {typeof childValue === 'object' && childValue !== null ? (
+                        renderJsonValue(childValue, childPath, level + 1)
+                      ) : (
+                        <span className="font-mono text-sm">
+                          {typeof childValue === 'string' ? `"${childValue}"` : String(childValue)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+              <div style={{ marginLeft: indent + 20 }}>
+                <span className="font-mono text-sm">{isArray ? ']' : '}'}</span>
+              </div>
             </div>
           )}
         </div>
       );
     }
-    
-    return <span>{String(value)}</span>;
+
+    return (
+      <span className="font-mono text-sm" style={{ marginLeft: indent }}>
+        {typeof value === 'string' ? `"${value}"` : String(value)}
+      </span>
+    );
   };
 
-  if (!parsedJson) {
+  if (!parsedData) {
     return (
-      <pre className="bg-muted p-4 rounded text-sm overflow-auto max-h-96">
-        <code>{content}</code>
-      </pre>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline">Invalid JSON</Badge>
+        </div>
+        <ScrollArea className="h-[60vh]">
+          <pre className="bg-muted p-4 rounded text-sm font-mono text-destructive">
+            {content}
+          </pre>
+        </ScrollArea>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">JSON Data</Badge>
+          <span className="text-sm text-muted-foreground">
+            {Object.keys(parsedData).length} root properties
+          </span>
+        </div>
         <Input
-          placeholder="Search in JSON..."
+          placeholder="Search JSON..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="w-64"
         />
       </div>
+      
       <ScrollArea className="h-[60vh]">
-        <div className="font-mono text-sm">
-          {renderJsonValue(parsedJson, 'root')}
+        <div className="p-4 bg-muted rounded">
+          {renderJsonValue(parsedData, 'root')}
         </div>
       </ScrollArea>
+    </div>
+  );
+}
+
+// Enhanced Code Viewer Component
+function CodeViewer({ content, language, filename }: { content: string; language?: string; filename?: string }) {
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  
+  const getLanguageFromFilename = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const languageMap: Record<string, string> = {
+      'js': 'javascript',
+      'ts': 'typescript',
+      'jsx': 'jsx',
+      'tsx': 'tsx',
+      'py': 'python',
+      'py3': 'python',
+      'html': 'html',
+      'css': 'css',
+      'scss': 'scss',
+      'json': 'json',
+      'md': 'markdown',
+      'txt': 'text',
+      'sh': 'bash',
+      'bash': 'bash',
+      'sql': 'sql',
+      'xml': 'xml',
+      'yaml': 'yaml',
+      'yml': 'yaml'
+    };
+    return languageMap[ext || ''] || 'text';
+  };
+
+  const detectedLanguage = language || (filename ? getLanguageFromFilename(filename) : 'text');
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{detectedLanguage.toUpperCase()}</Badge>
+          <span className="text-sm text-muted-foreground">
+            {lines.length} lines, {content.length} characters
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowLineNumbers(!showLineNumbers)}
+          >
+            {showLineNumbers ? 'Hide' : 'Show'} Line Numbers
+          </Button>
+        </div>
+      </div>
+      
+      <ScrollArea className="h-[60vh]">
+        <div className="bg-muted rounded-lg overflow-hidden">
+          <div className="bg-muted/50 px-4 py-2 border-b">
+            <div className="flex items-center gap-2">
+              <Code className="h-4 w-4" />
+              <span className="text-sm font-medium">{filename || 'code'}</span>
+            </div>
+          </div>
+          <div className="relative">
+            <SyntaxHighlighter
+              language={detectedLanguage}
+              style={vs}
+              showLineNumbers={showLineNumbers}
+              customStyle={{
+                margin: 0,
+                borderRadius: 0,
+                fontSize: '0.875rem',
+                lineHeight: '1.5',
+                backgroundColor: 'transparent'
+              }}
+              lineNumberStyle={{
+                minWidth: '2.5rem',
+                paddingRight: '1rem',
+                textAlign: 'right',
+                color: '#6b7280',
+                userSelect: 'none'
+              }}
+            >
+              {content}
+            </SyntaxHighlighter>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+// Enhanced PDF Viewer Component
+function PDFViewer({ file }: { file: FileStructure }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const getPdfUrl = () => {
+    if (file.imageUrl) {
+      return file.imageUrl;
+    }
+    // Fallback to API endpoint - construct path from name
+    return `/api/files/${file.name}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">PDF Document</Badge>
+          {file.size && (
+            <span className="text-sm text-muted-foreground">{file.size}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(getPdfUrl(), '_blank')}
+          >
+            <ExternalLink className="h-3 w-3 mr-1" />
+            Open in New Tab
+          </Button>
+          <Button size="sm" className="bg-chart-1 hover:bg-chart-1/90 text-white">
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
+        </div>
+      </div>
+      
+      <div className="border rounded-lg overflow-hidden bg-white">
+        {isLoading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 animate-pulse" />
+              <p className="text-sm text-muted-foreground">Loading PDF...</p>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <FileText className="h-16 w-16 mx-auto mb-4 text-destructive" />
+              <p className="text-sm text-muted-foreground">Failed to load PDF</p>
+              <p className="text-xs text-muted-foreground mt-1">{error}</p>
+            </div>
+          </div>
+        )}
+        
+        <iframe
+          src={`${getPdfUrl()}#toolbar=0`}
+          className="w-full h-[60vh] border-0"
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setError('Unable to load PDF preview');
+          }}
+          title={file.name}
+        />
+      </div>
     </div>
   );
 }
@@ -319,11 +479,12 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const getFileIcon = (file: FileStructure) => {
+    const mimeType = file.mimeType?.toLowerCase() || '';
+    
     if (file.type === 'directory') {
       return <Folder className="h-4 w-4 text-chart-2" />;
     }
     
-    const mimeType = file.mimeType?.toLowerCase() || '';
     if (mimeType.includes('image')) {
       return <FileImage className="h-4 w-4 text-chart-3" />;
     }
@@ -335,6 +496,12 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     }
     if (mimeType.includes('csv') || mimeType.includes('spreadsheet')) {
       return <FileSpreadsheet className="h-4 w-4 text-chart-1" />;
+    }
+    if (mimeType.includes('pdf')) {
+      return <FileText className="h-4 w-4 text-destructive" />;
+    }
+    if (mimeType.includes('text') || mimeType.includes('code') || mimeType.includes('script')) {
+      return <FileCode className="h-4 w-4 text-chart-6" />;
     }
     return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
@@ -350,48 +517,52 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   };
 
   const renderFileTree = (files: FileStructure[], level = 0) => {
-    return files.map((file) => (
-      <div key={file.id} className="select-none">
-        <div
-          className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-accent transition-colors ${
-            selectedFile?.id === file.id ? 'bg-chart-1/10 border border-chart-1/30' : ''
-          }`}
-          style={{ paddingLeft: `${level * 16 + 8}px` }}
-          onClick={() => {
-            if (file.type === 'directory') {
-              toggleFolder(file.id);
-            } else {
-              setSelectedFile(file);
-            }
-          }}
-        >
-          {file.type === 'directory' && (
-            <ChevronRight 
-              className={`h-3 w-3 transition-transform ${
-                expandedFolders.has(file.id) ? 'rotate-90' : ''
-              }`}
-            />
-          )}
-          {getFileIcon(file)}
-          <span className="text-sm">{file.name}</span>
-          {file.size && (
-            <Badge variant="outline" className="ml-auto text-xs">
-              {file.size}
-            </Badge>
+    return files.map((file) => {
+      const fileId = `${file.name}-${level}`;
+      const isExpanded = expandedFolders.has(fileId);
+      
+      return (
+        <div key={fileId}>
+          <div
+            className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted/50 ${
+              selectedFile?.id === file.id ? 'bg-muted' : ''
+            }`}
+            onClick={() => {
+              if (file.type === 'directory') {
+                toggleFolder(fileId);
+              } else {
+                setSelectedFile(file);
+              }
+            }}
+            style={{ marginLeft: level * 20 }}
+          >
+            {file.type === 'directory' ? (
+              <ChevronRight
+                className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+              />
+            ) : null}
+            {getFileIcon(file)}
+            <span className="text-sm truncate">{file.name}</span>
+            {file.size && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                {file.size}
+              </span>
+            )}
+          </div>
+          
+          {file.type === 'directory' && isExpanded && file.children && (
+            <div>{renderFileTree(file.children, level + 1)}</div>
           )}
         </div>
-        
-        {file.type === 'directory' && 
-         expandedFolders.has(file.id) && 
-         file.children && 
-         renderFileTree(file.children, level + 1)}
-      </div>
-    ));
+      );
+    });
   };
 
   const renderFilePreview = (file: FileStructure) => {
     const mimeType = file.mimeType?.toLowerCase() || '';
     
+    console.log(`Creating preview for filetype: ${mimeType}`)
+
     if (file.content) {
       if (mimeType.includes('json')) {
         return <JSONViewer content={file.content} />;
@@ -401,6 +572,12 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
         return <CSVTableView content={file.content} />;
       }
       
+      // Handle code files - check for various code-related MIME types
+      if (mimeType.includes('text/x-') || mimeType.includes('text/javascript') || mimeType.includes('text/typescript') || mimeType.includes('text/html') || mimeType.includes('text/css') || mimeType.includes('text/xml') || mimeType.includes('text/yaml') || mimeType.includes('text/markdown') || mimeType.includes('text/plain')) {
+        return <CodeViewer content={file.content} filename={file.name} />;
+      }
+      
+      // Fallback for any text content
       if (mimeType.includes('text')) {
         return (
           <div className="space-y-4">
@@ -485,23 +662,7 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     }
     
     if (mimeType.includes('pdf')) {
-      return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Badge variant="outline">PDF Document</Badge>
-            {file.size && (
-              <span className="text-sm text-muted-foreground">{file.size}</span>
-            )}
-          </div>
-          <div className="flex items-center justify-center h-64 bg-muted rounded">
-            <div className="text-center">
-              <FileText className="h-16 w-16 mx-auto mb-4 text-destructive" />
-              <p className="text-sm text-muted-foreground">PDF preview not available</p>
-              <p className="text-xs text-muted-foreground mt-1">Click download to view PDF</p>
-            </div>
-          </div>
-        </div>
-      );
+      return <PDFViewer file={file} />;
     }
     
     return (

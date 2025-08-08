@@ -1,0 +1,56 @@
+{
+  "app": {
+    "name": "PIDS Data Explorer",
+    "version": "1.0.0",
+    "description": "A modern web application for exploring and analyzing public information datasets"
+  },
+  "server": {
+    "port": 3000,
+    "host": "localhost",
+    "environment": "development"
+  },
+  "database": {
+    "url": "mongodb://localhost:27017/pids",
+    "options": {
+      "useNewUrlParser": true,
+      "useUnifiedTopology": true
+    }
+  },
+  "storage": {
+    "type": "minio",
+    "endpoint": "localhost",
+    "port": 9000,
+    "bucket": "pids-datasets",
+    "accessKey": "minioadmin",
+    "secretKey": "minioadmin"
+  },
+  "features": {
+    "filePreview": {
+      "enabled": true,
+      "maxFileSize": "10MB",
+      "supportedFormats": [
+        "jpg", "jpeg", "png", "gif", "pdf", "txt", "md", "json", "csv",
+        "py", "js", "ts", "html", "css", "xml", "yaml", "yml"
+      ]
+    },
+    "search": {
+      "enabled": true,
+      "indexTypes": ["fulltext", "metadata"],
+      "maxResults": 100
+    },
+    "authentication": {
+      "enabled": true,
+      "provider": "keycloak",
+      "realm": "pids"
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "combined",
+    "file": "logs/app.log"
+  },
+  "cors": {
+    "origin": ["http://localhost:8080", "http://localhost:3000"],
+    "credentials": true
+  }
+}

@@ -524,7 +524,29 @@ const getMimeType = (filename: string): string => {
     'txt': 'text/plain',
     'md': 'text/markdown',
     'dcm': 'application/dicom',
-    'parquet': 'application/octet-stream'
+    'parquet': 'application/octet-stream',
+    // Code file extensions
+    'py': 'text/x-python',
+    'py3': 'text/x-python',
+    'js': 'text/javascript',
+    'ts': 'text/typescript',
+    'jsx': 'text/jsx',
+    'tsx': 'text/tsx',
+    'html': 'text/html',
+    'htm': 'text/html',
+    'css': 'text/css',
+    'scss': 'text/x-scss',
+    'sass': 'text/x-sass',
+    'sh': 'text/x-sh',
+    'bash': 'text/x-sh',
+    'sql': 'text/x-sql',
+    'xml': 'text/xml',
+    'yaml': 'text/yaml',
+    'yml': 'text/yaml',
+    'toml': 'text/x-toml',
+    'ini': 'text/x-ini',
+    'cfg': 'text/x-ini',
+    'conf': 'text/x-ini'
   };
   return mimeTypes[ext || ''] || 'application/octet-stream';
 };

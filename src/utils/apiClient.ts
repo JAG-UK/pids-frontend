@@ -1,8 +1,15 @@
 import { Dataset, SearchFilters, FileStructure } from '../components/types';
 
 // API Configuration
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
 const USE_MOCK_DATA = (import.meta as any).env?.VITE_USE_MOCK_DATA === 'true';
+
+// Debug logging
+console.log('🔧 API Configuration:', {
+  API_BASE_URL,
+  USE_MOCK_DATA,
+  NODE_ENV: (import.meta as any).env?.NODE_ENV || 'unknown'
+});
 
 // Mock data (moved from App.tsx)
 const mockDatasets: Dataset[] = [
@@ -681,6 +688,7 @@ const mockApi = {
 const realApi = {
   async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
     console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token });
+    console.log('🌐 API_BASE_URL:', API_BASE_URL);
     
     try {
       const params = new URLSearchParams();
@@ -704,11 +712,14 @@ const realApi = {
         console.log('🔑 Adding Authorization header');
       }
 
+      console.log('📡 Making fetch request to:', url);
       const response = await fetch(url, { headers });
       console.log('📡 Response status:', response.status, response.statusText);
       
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ API response error:', errorText);
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result: ApiResponse<any[]> = await response.json();
@@ -934,12 +945,15 @@ export const apiClient = {
   async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for getDatasets');
         return await mockApi.getDatasets(searchQuery, filters, page, limit);
       } else {
+        console.log('🔄 Using real API for getDatasets');
         return await realApi.getDatasets(searchQuery, filters, page, limit, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for getDatasets due to real API failure.');
       return await mockApi.getDatasets(searchQuery, filters, page, limit);
     }
   },
@@ -947,12 +961,15 @@ export const apiClient = {
   async getDataset(id: string, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for getDataset');
         return await mockApi.getDataset(id);
       } else {
+        console.log('🔄 Using real API for getDataset');
         return await realApi.getDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for getDataset due to real API failure.');
       return await mockApi.getDataset(id);
     }
   },
@@ -960,12 +977,15 @@ export const apiClient = {
   async createDataset(dataset: Omit<Dataset, 'id'>, token?: string): Promise<Dataset> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for createDataset');
         return await mockApi.createDataset(dataset);
       } else {
+        console.log('🔄 Using real API for createDataset');
         return await realApi.createDataset(dataset, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for createDataset due to real API failure.');
       return await mockApi.createDataset(dataset);
     }
   },
@@ -973,12 +993,15 @@ export const apiClient = {
   async updateDataset(id: string, updates: Partial<Dataset>, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for updateDataset');
         return await mockApi.updateDataset(id, updates);
       } else {
+        console.log('🔄 Using real API for updateDataset');
         return await realApi.updateDataset(id, updates, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for updateDataset due to real API failure.');
       return await mockApi.updateDataset(id, updates);
     }
   },
@@ -986,12 +1009,15 @@ export const apiClient = {
   async deleteDataset(id: string, token?: string): Promise<boolean> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for deleteDataset');
         return await mockApi.deleteDataset(id);
       } else {
+        console.log('🔄 Using real API for deleteDataset');
         return await realApi.deleteDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for deleteDataset due to real API failure.');
       return await mockApi.deleteDataset(id);
     }
   },
@@ -999,12 +1025,15 @@ export const apiClient = {
   async approveDataset(id: string, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for approveDataset');
         return await mockApi.approveDataset(id);
       } else {
+        console.log('🔄 Using real API for approveDataset');
         return await realApi.approveDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for approveDataset due to real API failure.');
       return await mockApi.approveDataset(id);
     }
   },
@@ -1012,12 +1041,15 @@ export const apiClient = {
   async rejectDataset(id: string, token?: string): Promise<Dataset | null> {
     try {
       if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for rejectDataset');
         return await mockApi.rejectDataset(id);
       } else {
+        console.log('🔄 Using real API for rejectDataset');
         return await realApi.rejectDataset(id, token);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for rejectDataset due to real API failure.');
       return await mockApi.rejectDataset(id);
     }
   }

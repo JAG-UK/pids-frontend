@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import routes
 import datasetsRouter from './routes/datasets.js';
@@ -20,6 +22,10 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Trust proxy (needed for rate limiting behind nginx)
 app.set('trust proxy', 1);
@@ -48,6 +54,17 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve static files from public directory (must come before API routes)
+app.use('/api/files', express.static(path.join(__dirname, '../public/files'), {
+  setHeaders: (res, path) => {
+    // Set proper headers for images
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.gif')) {
+      res.setHeader('Content-Type', `image/${path.split('.').pop()}`);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    }
+  }
+}));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -61,7 +78,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
+// API routes (these come after static file serving)
 app.use('/api/datasets', datasetsRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/auth', authRouter);

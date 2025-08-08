@@ -2,8 +2,8 @@ import express from 'express';
 
 const router = express.Router();
 
-// GET /api/files/:id - Get file by ID
-router.get('/:id', async (req, res) => {
+// GET /api/files/info/:id - Get file info by ID (for API routes)
+router.get('/info/:id', async (req, res) => {
   try {
     const { id } = req.params;
     // TODO: Implement file retrieval from MinIO
@@ -37,8 +37,8 @@ router.post('/upload', async (req, res) => {
   }
 });
 
-// DELETE /api/files/:id - Delete file
-router.delete('/:id', async (req, res) => {
+// DELETE /api/files/delete/:id - Delete file
+router.delete('/delete/:id', async (req, res) => {
   try {
     const { id } = req.params;
     // TODO: Implement file deletion from MinIO

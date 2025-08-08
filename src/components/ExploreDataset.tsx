@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ExploreDatasetProps, FileStructure } from './types';
 import { 
   ArrowLeft, 
@@ -14,12 +16,306 @@ import {
   FileSpreadsheet,
   FileJson,
   Download,
-  ChevronRight
+  ChevronRight,
+  Search,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
+
+// Enhanced CSV Table Component
+function CSVTableView({ content }: { content: string }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<number | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 50;
+
+  const parsedData = useMemo(() => {
+    if (!content) return { headers: [], rows: [] };
+    
+    const lines = content.trim().split('\n');
+    if (lines.length === 0) return { headers: [], rows: [] };
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const rows = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      return headers.reduce((obj, header, index) => {
+        obj[header] = values[index] || '';
+        return obj;
+      }, {} as Record<string, string>);
+    });
+    
+    return { headers, rows };
+  }, [content]);
+
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = parsedData.rows;
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(row => 
+        Object.values(row).some(value => 
+          value.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+    
+    // Apply sorting
+    if (sortColumn !== null && parsedData.headers[sortColumn]) {
+      const header = parsedData.headers[sortColumn];
+      filtered = [...filtered].sort((a, b) => {
+        const aVal = a[header] || '';
+        const bVal = b[header] || '';
+        
+        // Try to sort as numbers if possible
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+        
+        // Otherwise sort as strings
+        const comparison = aVal.localeCompare(bVal);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return filtered;
+  }, [parsedData, searchTerm, sortColumn, sortDirection]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredAndSortedData.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredAndSortedData, currentPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
+
+  const handleSort = (columnIndex: number) => {
+    if (sortColumn === columnIndex) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(columnIndex);
+      setSortDirection('asc');
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Search and Controls */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search in data..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Badge variant="outline">
+          {filteredAndSortedData.length} rows
+        </Badge>
+      </div>
+
+      {/* Table */}
+      <div className="border rounded-lg">
+        <ScrollArea className="h-[60vh]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {parsedData.headers.map((header, index) => (
+                  <TableHead key={header} className="cursor-pointer hover:bg-accent" onClick={() => handleSort(index)}>
+                    <div className="flex items-center gap-2">
+                      {header}
+                      {sortColumn === index && (
+                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.map((row, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {parsedData.headers.map(header => (
+                    <TableCell key={header} className="max-w-[200px] truncate">
+                      {row[header] || ''}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Enhanced JSON Viewer Component
+function JSONViewer({ content }: { content: string }) {
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['root']));
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const parsedJson = useMemo(() => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }, [content]);
+
+  const togglePath = (path: string) => {
+    const newExpanded = new Set(expandedPaths);
+    if (newExpanded.has(path)) {
+      newExpanded.delete(path);
+    } else {
+      newExpanded.add(path);
+    }
+    setExpandedPaths(newExpanded);
+  };
+
+  const renderJsonValue = (value: any, path: string, level: number = 0): JSX.Element => {
+    const indent = level * 20;
+    
+    if (value === null) {
+      return <span className="text-muted-foreground">null</span>;
+    }
+    
+    if (typeof value === 'boolean') {
+      return <span className={value ? 'text-green-600' : 'text-red-600'}>{value.toString()}</span>;
+    }
+    
+    if (typeof value === 'number') {
+      return <span className="text-blue-600">{value}</span>;
+    }
+    
+    if (typeof value === 'string') {
+      return <span className="text-green-800">"{value}"</span>;
+    }
+    
+    if (Array.isArray(value)) {
+      const isExpanded = expandedPaths.has(path);
+      return (
+        <div>
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded"
+            onClick={() => togglePath(path)}
+            style={{ marginLeft: `${indent}px` }}
+          >
+            <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+            <span className="text-purple-600">[</span>
+            <span className="text-muted-foreground">{value.length} items</span>
+            {!isExpanded && <span className="text-muted-foreground">...</span>}
+            <span className="text-purple-600">]</span>
+          </div>
+          {isExpanded && (
+            <div>
+              {value.map((item, index) => (
+                <div key={index}>
+                  {renderJsonValue(item, `${path}.${index}`, level + 1)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    if (typeof value === 'object') {
+      const isExpanded = expandedPaths.has(path);
+      const keys = Object.keys(value);
+      return (
+        <div>
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded"
+            onClick={() => togglePath(path)}
+            style={{ marginLeft: `${indent}px` }}
+          >
+            <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+            <span className="text-purple-600">{'{'}</span>
+            <span className="text-muted-foreground">{keys.length} properties</span>
+            {!isExpanded && <span className="text-muted-foreground">...</span>}
+            <span className="text-purple-600">{'}'}</span>
+          </div>
+          {isExpanded && (
+            <div>
+              {keys.map(key => (
+                <div key={key}>
+                  <div style={{ marginLeft: `${indent + 20}px` }}>
+                    <span className="text-blue-800 font-medium">"{key}": </span>
+                    {renderJsonValue(value[key], `${path}.${key}`, level + 1)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return <span>{String(value)}</span>;
+  };
+
+  if (!parsedJson) {
+    return (
+      <pre className="bg-muted p-4 rounded text-sm overflow-auto max-h-96">
+        <code>{content}</code>
+      </pre>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search in JSON..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+      <ScrollArea className="h-[60vh]">
+        <div className="font-mono text-sm">
+          {renderJsonValue(parsedJson, 'root')}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
 
 export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   const [selectedFile, setSelectedFile] = useState<FileStructure | null>(null);
-
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const getFileIcon = (file: FileStructure) => {
@@ -98,27 +394,28 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     
     if (file.content) {
       if (mimeType.includes('json')) {
-        try {
-          const formatted = JSON.stringify(JSON.parse(file.content), null, 2);
-          return (
-            <pre className="bg-muted p-4 rounded text-sm overflow-auto max-h-96 text-chart-5">
-              <code>{formatted}</code>
-            </pre>
-          );
-        } catch {
-          return (
-            <pre className="bg-muted p-4 rounded text-sm overflow-auto max-h-96">
-              <code>{file.content}</code>
-            </pre>
-          );
-        }
+        return <JSONViewer content={file.content} />;
       }
       
-      if (mimeType.includes('csv') || mimeType.includes('text')) {
+      if (mimeType.includes('csv')) {
+        return <CSVTableView content={file.content} />;
+      }
+      
+      if (mimeType.includes('text')) {
         return (
-          <pre className="bg-muted p-4 rounded text-sm overflow-auto max-h-96">
-            <code>{file.content}</code>
-          </pre>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline">Text File</Badge>
+              <span className="text-sm text-muted-foreground">
+                {file.content.length} characters
+              </span>
+            </div>
+            <ScrollArea className="h-[60vh]">
+              <pre className="bg-muted p-4 rounded text-sm font-mono">
+                <code>{file.content}</code>
+              </pre>
+            </ScrollArea>
+          </div>
         );
       }
     }
@@ -126,23 +423,30 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     if (mimeType.includes('image')) {
       if (file.imageUrl) {
         return (
-          <div className="flex items-center justify-center bg-muted rounded overflow-hidden">
-            <img 
-              src={file.imageUrl} 
-              alt={file.name}
-              className="max-w-full max-h-96 object-contain"
-              onError={(e) => {
-                // Fallback if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            <div className="hidden flex items-center justify-center h-64 w-full">
-              <div className="text-center">
-                <FileImage className="h-16 w-16 mx-auto mb-4 text-chart-3" />
-                <p className="text-sm text-muted-foreground">Image not found</p>
-                <p className="text-xs text-muted-foreground mt-1">Please add the image file to the public folder</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline">Image Preview</Badge>
+              {file.size && (
+                <span className="text-sm text-muted-foreground">{file.size}</span>
+              )}
+            </div>
+            <div className="flex items-center justify-center bg-muted rounded overflow-hidden">
+              <img 
+                src={file.imageUrl} 
+                alt={file.name}
+                className="max-w-full max-h-[60vh] object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="hidden flex items-center justify-center h-64 w-full">
+                <div className="text-center">
+                  <FileImage className="h-16 w-16 mx-auto mb-4 text-chart-3" />
+                  <p className="text-sm text-muted-foreground">Image not found</p>
+                  <p className="text-xs text-muted-foreground mt-1">Please add the image file to the public folder</p>
+                </div>
               </div>
             </div>
           </div>
@@ -162,11 +466,19 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     
     if (mimeType.includes('video')) {
       return (
-        <div className="flex items-center justify-center h-64 bg-muted rounded">
-          <div className="text-center">
-            <FileVideo className="h-16 w-16 mx-auto mb-4 text-chart-4" />
-            <p className="text-sm text-muted-foreground">Video preview not available</p>
-            <p className="text-xs text-muted-foreground mt-1">Click download to view video</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">Video File</Badge>
+            {file.size && (
+              <span className="text-sm text-muted-foreground">{file.size}</span>
+            )}
+          </div>
+          <div className="flex items-center justify-center h-64 bg-muted rounded">
+            <div className="text-center">
+              <FileVideo className="h-16 w-16 mx-auto mb-4 text-chart-4" />
+              <p className="text-sm text-muted-foreground">Video preview not available</p>
+              <p className="text-xs text-muted-foreground mt-1">Click download to view video</p>
+            </div>
           </div>
         </div>
       );
@@ -174,11 +486,19 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     
     if (mimeType.includes('pdf')) {
       return (
-        <div className="flex items-center justify-center h-64 bg-muted rounded">
-          <div className="text-center">
-            <FileText className="h-16 w-16 mx-auto mb-4 text-destructive" />
-            <p className="text-sm text-muted-foreground">PDF preview not available</p>
-            <p className="text-xs text-muted-foreground mt-1">Click download to view PDF</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">PDF Document</Badge>
+            {file.size && (
+              <span className="text-sm text-muted-foreground">{file.size}</span>
+            )}
+          </div>
+          <div className="flex items-center justify-center h-64 bg-muted rounded">
+            <div className="text-center">
+              <FileText className="h-16 w-16 mx-auto mb-4 text-destructive" />
+              <p className="text-sm text-muted-foreground">PDF preview not available</p>
+              <p className="text-xs text-muted-foreground mt-1">Click download to view PDF</p>
+            </div>
           </div>
         </div>
       );
@@ -272,18 +592,16 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[50vh]">
-              {selectedFile ? (
-                renderFilePreview(selectedFile)
-              ) : (
-                <div className="flex items-center justify-center h-full text-center">
-                  <div>
-                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Select a file to preview its contents</p>
-                  </div>
+            {selectedFile ? (
+              renderFilePreview(selectedFile)
+            ) : (
+              <div className="flex items-center justify-center h-full text-center">
+                <div>
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Select a file to preview its contents</p>
                 </div>
-              )}
-            </ScrollArea>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

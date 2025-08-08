@@ -13,7 +13,7 @@ export const testApiClient = async () => {
     console.log('Pagination:', result.pagination);
     
     if (result.datasets.length > 0) {
-      console.log('First dataset:', result.datasets[0].title);
+      console.log('First dataset:', result.datasets[0].name);
     }
     
     return true;

@@ -6,6 +6,7 @@ const fileStructureSchema = new mongoose.Schema({
   size: { type: Number, default: 0 },
   path: { type: String, required: true },
   imageUrl: { type: String },
+  content: { type: String }, // Add content field for file previews
   children: [{ type: mongoose.Schema.Types.Mixed }]
 }, { timestamps: true });
 
@@ -19,7 +20,8 @@ const datasetSchema = new mongoose.Schema({
   dateUpdated: { type: Date, default: Date.now },
   fileStructure: [fileStructureSchema],
   isPublic: { type: Boolean, default: true },
-  createdBy: { type: String, default: 'admin' }
+  createdBy: { type: String, default: 'admin' },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
 }, { timestamps: true });
 
 // Index for search functionality

@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Frontend (existing)
+  # Frontend (Production - default)
   pids-frontend:
     build: .
     ports:
@@ -12,6 +12,29 @@ services:
     depends_on: [pids-api]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Development - optional)
+  pids-frontend-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_USE_MOCK_DATA=false
+      - VITE_API_URL=http://localhost:3000/api
+    restart: unless-stopped
+    depends_on: [pids-api]
+    volumes:
+      - .:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
       interval: 30s
       timeout: 10s
       retries: 3

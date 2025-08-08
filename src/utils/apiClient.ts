@@ -489,12 +489,19 @@ const transformFileStructure = (files: any[]): FileStructure[] => {
     const transformed = files.map(file => ({
       id: file._id || file.name,
       name: file.name,
-      type: file.type,
+      type: file.type as 'file' | 'directory' | 'split-file',
       size: file.size ? formatBytes(file.size) : undefined,
       mimeType: getMimeType(file.name),
       children: file.children ? transformFileStructure(file.children) : undefined,
       content: file.content, // Include content field for file previews
-      imageUrl: file.imageUrl
+      imageUrl: file.imageUrl,
+      // New manifest fields
+      hash: file.hash,
+      cid: file.cid,
+      byte_length: file.byte_length,
+      media_type: file.media_type,
+      piece_cid: file.piece_cid,
+      parts: file.parts
     }));
     
     console.log('✅ transformFileStructure output:', transformed);

@@ -16,13 +16,20 @@ export interface Dataset {
 export interface FileStructure {
   id: string;
   name: string;
-  type: 'file' | 'directory';
+  type: 'file' | 'directory' | 'split-file';
   size?: string;
   lastModified?: string;
   mimeType?: string;
   children?: FileStructure[];
   content?: string; // For preview content
   imageUrl?: string; // For image file previews
+  // New manifest fields
+  hash?: string;
+  cid?: string;
+  byte_length?: number;
+  media_type?: string;
+  piece_cid?: string;
+  parts?: any[]; // For split-files
 }
 
 export interface SearchFilters {

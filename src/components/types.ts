@@ -25,6 +25,13 @@ export interface FileStructure {
   imageUrl?: string; // For image file previews
 }
 
+export interface SearchFilters {
+  format: string[];
+  tags: string[];
+  dateRange: 'all' | 'week' | 'month' | 'year';
+  sizeRange: 'all' | 'small' | 'medium' | 'large';
+}
+
 export interface AdminDashboardProps {
   datasets: Dataset[];
   pendingDatasets: Dataset[];

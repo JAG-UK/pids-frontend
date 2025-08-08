@@ -54,17 +54,6 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files from public directory (must come before API routes)
-app.use('/api/files', express.static(path.join(__dirname, '../public/files'), {
-  setHeaders: (res, path) => {
-    // Set proper headers for images
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.gif')) {
-      res.setHeader('Content-Type', `image/${path.split('.').pop()}`);
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    }
-  }
-}));
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -78,7 +67,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes (these come after static file serving)
+// API routes
 app.use('/api/datasets', datasetsRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/auth', authRouter);
@@ -115,13 +104,9 @@ async function startServer() {
     await connectDB();
     console.log('✅ Connected to MongoDB');
 
-    // Initialize MinIO (optional for now)
-    try {
-      await initializeMinIO();
-      console.log('✅ Connected to MinIO');
-    } catch (error) {
-      console.warn('⚠️  MinIO connection failed, continuing without file storage:', error.message);
-    }
+    // Initialize MinIO
+    await initializeMinIO();
+    console.log('✅ Connected to MinIO');
 
     // Start server
     app.listen(PORT, () => {

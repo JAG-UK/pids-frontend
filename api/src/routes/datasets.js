@@ -1,8 +1,127 @@
 import express from 'express';
 import Dataset from '../models/Dataset.js';
 import { authenticateToken, requireAdmin, optionalAuth } from '../middleware/auth.js';
+import { parseManifest, validateManifest } from '../utils/manifestParser.js';
+import { uploadFile, getMinIOClient } from '../utils/storage.js';
+import multer from 'multer';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// POST /api/datasets/upload-manifest - Upload manifest file (unauthenticated)
+router.post('/upload-manifest', upload.single('manifest'), async (req, res) => {
+  try {
+    console.log('📁 Manifest upload request received');
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No manifest file provided'
+      });
+    }
+    
+    console.log('📄 File details:', {
+      originalname: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+    
+    // Parse the manifest JSON
+    let manifestData;
+    try {
+      const manifestText = req.file.buffer.toString('utf8');
+      manifestData = JSON.parse(manifestText);
+      console.log('✅ Manifest JSON parsed successfully');
+    } catch (error) {
+      console.error('❌ JSON parsing error:', error);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid JSON in manifest file'
+      });
+    }
+    
+    // Validate manifest structure
+    try {
+      validateManifest(manifestData);
+      console.log('✅ Manifest validation passed');
+    } catch (error) {
+      console.error('❌ Manifest validation failed:', error);
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
+    // Parse manifest to dataset format
+    let datasetData;
+    try {
+      datasetData = parseManifest(manifestData);
+      console.log('✅ Manifest converted to dataset format');
+    } catch (error) {
+      console.error('❌ Manifest parsing failed:', error);
+      return res.status(400).json({
+        success: false,
+        error: `Failed to parse manifest: ${error.message}`
+      });
+    }
+    
+    // Save manifest file to MinIO
+    let manifestFilePath;
+    try {
+      const manifestFileName = `manifests/${datasetData.uuid || Date.now()}_${req.file.originalname}`;
+      const uploadResult = await uploadFile(req.file, manifestFileName);
+      manifestFilePath = manifestFileName;
+      console.log('✅ Manifest file saved to MinIO:', manifestFilePath);
+    } catch (error) {
+      console.error('❌ Failed to save manifest file:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to save manifest file'
+      });
+    }
+    
+    // Add manifest file path to dataset
+    datasetData.manifestFile = manifestFilePath;
+    
+    // Create dataset in database
+    try {
+      const dataset = new Dataset(datasetData);
+      await dataset.save();
+      console.log('✅ Dataset created in database:', dataset._id);
+      
+      res.status(201).json({
+        success: true,
+        data: {
+          id: dataset._id,
+          title: dataset.title,
+          status: dataset.status,
+          manifestFile: dataset.manifestFile,
+          message: 'Manifest uploaded successfully and dataset created in quarantine'
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to save dataset:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to save dataset to database'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in manifest upload:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // GET /api/datasets - Get datasets (filtered by authentication)
 router.get('/', optionalAuth, async (req, res) => {

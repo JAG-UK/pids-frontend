@@ -63,6 +63,85 @@ router.get('/:filename(*)', async (req, res) => {
   }
 });
 
+// GET /api/files/manifest/:datasetId - Get manifest file for a dataset
+router.get('/manifest/:datasetId', async (req, res) => {
+  try {
+    const { datasetId } = req.params;
+    const client = getMinIOClient();
+    const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
+    
+    // Import Dataset model
+    const Dataset = (await import('../models/Dataset.js')).default;
+    
+    // Find the dataset
+    const dataset = await Dataset.findById(datasetId);
+    if (!dataset) {
+      return res.status(404).json({
+        success: false,
+        error: 'Dataset not found'
+      });
+    }
+    
+    if (!dataset.manifestFile) {
+      return res.status(404).json({
+        success: false,
+        error: 'No manifest file found for this dataset'
+      });
+    }
+    
+    // Check if manifest file exists
+    let stat;
+    try {
+      stat = await client.statObject(bucketName, dataset.manifestFile);
+    } catch (error) {
+      if (error.code === 'NotFound') {
+        return res.status(404).json({
+          success: false,
+          error: 'Manifest file not found'
+        });
+      }
+      throw error;
+    }
+    
+    // Set appropriate headers for JSON manifest
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    
+    // Get the manifest file and send it
+    const dataStream = client.getObject(bucketName, dataset.manifestFile);
+    const chunks = [];
+    
+    dataStream.on('data', (chunk) => {
+      chunks.push(chunk);
+    });
+    
+    dataStream.on('end', () => {
+      const buffer = Buffer.concat(chunks);
+      res.send(buffer);
+    });
+    
+    dataStream.on('error', (error) => {
+      console.error('Error reading manifest file from MinIO:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Error reading manifest file'
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error serving manifest file:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+});
+
 // GET /api/files/info/:id - Get file info by ID (for API routes)
 router.get('/info/:id', async (req, res) => {
   try {

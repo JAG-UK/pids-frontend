@@ -29,6 +29,15 @@ import {
   ExternalLink
 } from 'lucide-react';
 
+// Utility function for formatting bytes
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
 // Enhanced CSV Table Component
 function CSVTableView({ content }: { content: string }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -485,6 +494,10 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
       return <Folder className="h-4 w-4 text-chart-2" />;
     }
     
+    if (file.type === 'split-file') {
+      return <FileVideo className="h-4 w-4 text-chart-4" />; // Use video icon for split files
+    }
+    
     if (mimeType.includes('image')) {
       return <FileImage className="h-4 w-4 text-chart-3" />;
     }
@@ -562,6 +575,40 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     const mimeType = file.mimeType?.toLowerCase() || '';
     
     console.log(`Creating preview for filetype: ${mimeType}`)
+
+    // Handle split-files
+    if (file.type === 'split-file') {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">Split File</Badge>
+            {file.size && (
+              <span className="text-sm text-muted-foreground">{file.size}</span>
+            )}
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              This is a split file with {file.parts?.length || 0} parts.
+            </p>
+            {file.parts && file.parts.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium">Parts:</h4>
+                <div className="space-y-1">
+                  {file.parts.map((part: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                      <span className="text-sm">{part.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {part.byte_length ? formatBytes(part.byte_length) : 'Unknown size'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     if (file.content) {
       if (mimeType.includes('json')) {

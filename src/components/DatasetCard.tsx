@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { DatasetCardProps } from './types';
-import { Download, Info, Check, X, Trash2, HardDrive, Calendar, Building2, FolderOpen } from 'lucide-react';
+import { Download, Info, Check, X, Trash2, HardDrive, Calendar, Building2, FolderOpen, ExternalLink } from 'lucide-react';
 
 export function DatasetCard({ 
   dataset, 
@@ -160,7 +160,7 @@ export function DatasetCard({
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>{dataset.name}</DialogTitle>
-                    <DialogDescription>Dataset details and metadata</DialogDescription>
+                    <DialogDescription>{dataset.description}</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -176,24 +176,12 @@ export function DatasetCard({
                         <label className="text-sm font-medium">Size</label>
                         <p className="text-sm text-muted-foreground">{dataset.size}</p>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium">Format</label>
-                        <p className="text-sm text-muted-foreground">{dataset.format}</p>
-                      </div>
                       {dataset.status === 'approved' && dataset.verifiedDate && (
                         <div>
                           <label className="text-sm font-medium">Verified Date</label>
                           <p className="text-sm text-muted-foreground">{formatDate(dataset.verifiedDate)}</p>
                         </div>
                       )}
-                      <div>
-                        <label className="text-sm font-medium">Status</label>
-                        <p className="text-sm text-muted-foreground capitalize">{dataset.status}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Description</label>
-                      <p className="text-sm text-muted-foreground mt-1">{dataset.description}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium">Tags</label>
@@ -203,6 +191,26 @@ export function DatasetCard({
                         ))}
                       </div>
                     </div>
+                    {dataset.pieces && dataset.pieces.length > 0 && (
+                      <div>
+                        <label className="text-sm font-medium">Pieces</label>
+                        <div className="mt-2 space-y-1">
+                          {dataset.pieces.map((piece, index) => (
+                            <div key={index} className="bg-muted/50 rounded p-2">
+                              <a 
+                                href={`https://filecoin.tools/search?q=${piece.piece_cid}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-mono text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                              >
+                                {piece.piece_cid}
+                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </DialogContent>
               </Dialog>

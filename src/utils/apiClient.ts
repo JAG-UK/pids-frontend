@@ -1,4 +1,4 @@
-import { Dataset, SearchFilters, FileStructure } from '../components/types';
+import { Dataset, SearchFilters, FileStructure, Piece } from '../components/types';
 
 // API Configuration
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
@@ -470,7 +470,8 @@ const transformDataset = (apiDataset: any): Dataset => {
       format: apiDataset.format,
       tags: apiDataset.tags || [],
       downloadUrl: '#', // Placeholder
-      files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined
+      files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined,
+      pieces: apiDataset.pieces || undefined // Include pieces from manifest format
     };
     
     console.log('✅ transformDataset output:', transformed);

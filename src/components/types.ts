@@ -11,6 +11,12 @@ export interface Dataset {
   tags: string[];
   downloadUrl: string;
   files?: FileStructure[]; // File structure for explore feature
+  pieces?: Piece[]; // Pieces from manifest format
+}
+
+export interface Piece {
+  piece_cid: string;
+  payload_cid: string;
 }
 
 export interface FileStructure {

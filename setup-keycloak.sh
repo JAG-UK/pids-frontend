@@ -57,8 +57,8 @@ curl -s -X POST http://localhost:8081/admin/realms/pids/clients \
         "publicClient": true,
         "standardFlowEnabled": true,
         "directAccessGrantsEnabled": true,
-        "redirectUris": ["http://localhost:8080/*", "http://localhost:3000/*"],
-        "webOrigins": ["http://localhost:8080", "http://localhost:3000"],
+        "redirectUris": ["http://localhost:8080/*", "http://localhost:5173/*", "http://localhost:3000/*"],
+        "webOrigins": ["http://localhost:8080", "http://localhost:5173", "http://localhost:3000"],
         "attributes": {
             "saml.assertion.signature": "false",
             "saml.force.post.binding": "false",

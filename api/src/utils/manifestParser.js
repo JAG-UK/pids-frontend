@@ -186,7 +186,7 @@ export const validateManifest = (manifestData) => {
   if (!manifestData.description) errors.push('Missing required field: description');
   if (!manifestData['@spec']) errors.push('Missing required field: @spec');
   if (!manifestData['@spec_version']) errors.push('Missing required field: @spec_version');
-  if (!manifestData['@type']) errors.push('Missing required field: @type');
+  //if (!manifestData['@type']) errors.push('Missing required field: @type');
   
   // Check contents structure
   if (!manifestData.contents || !Array.isArray(manifestData.contents)) {

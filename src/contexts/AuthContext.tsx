@@ -36,8 +36,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         console.log('Initializing Keycloak...');
         
+        // Get API base URL from environment
+        const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
+        console.log('Using API base URL for Keycloak config:', API_BASE_URL);
+        
         // Get Keycloak configuration from API
-        const response = await fetch('/api/auth/keycloak-config');
+        const response = await fetch(`${API_BASE_URL}/auth/keycloak-config`);
         const config = await response.json();
         
         if (!config.success) {
@@ -82,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('User is authenticated, getting user info...');
           // Get user info from API
           try {
-            const userResponse = await fetch('/api/auth/me', {
+            const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${kc.token}`,
               },

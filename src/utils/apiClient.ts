@@ -1,4 +1,4 @@
-import { Dataset, SearchFilters, FileStructure, Piece } from '../components/types';
+import { Dataset, SearchFilters, FileStructure } from '../components/types';
 
 // API Configuration
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
@@ -502,7 +502,9 @@ const transformFileStructure = (files: any[]): FileStructure[] => {
       byte_length: file.byte_length,
       media_type: file.media_type,
       piece_cid: file.piece_cid,
-      parts: file.parts
+      parts: file.parts,
+      // File path for MinIO access
+      path: file.path
     }));
     
     console.log('✅ transformFileStructure output:', transformed);
@@ -515,13 +517,11 @@ const transformFileStructure = (files: any[]): FileStructure[] => {
 
 // Format bytes to human readable format
 const formatBytes = (bytes: number): string => {
-  console.log('🔢 formatBytes input:', bytes);
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   const result = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  console.log('🔢 formatBytes output:', result);
   return result;
 };
 
@@ -610,7 +610,7 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
 
 // Mock API functions
 const mockApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20): Promise<PaginatedDatasets> {
     // Simulate network delay
     await delay(300);
     
@@ -694,7 +694,7 @@ const mockApi = {
 
 // Real API functions
 const realApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string): Promise<PaginatedDatasets> {
     console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token });
     console.log('🌐 API_BASE_URL:', API_BASE_URL);
     

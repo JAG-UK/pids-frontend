@@ -5,7 +5,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
 import { ExploreDatasetProps, FileStructure } from './types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -20,7 +20,7 @@ import {
   FileJson,
   Download,
   ChevronRight,
-  Search,
+
   ChevronUp,
   ChevronDown,
   Code,
@@ -38,8 +38,51 @@ const formatBytes = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+// Utility function to construct file URLs using the new dataset-based scheme
+const getFileUrl = (datasetId: string, file: FileStructure): string => {
+  console.log('🔍 getFileUrl called with:', { datasetId, file: { name: file.name, path: file.path, fileUrl: file.fileUrl, imageUrl: file.imageUrl } });
+  // If the file has a direct fileUrl (from the new manifest format), use it
+  // But only if it's a valid, non-empty URL
+  if (file.fileUrl && file.fileUrl.trim() !== '' && file.fileUrl !== 'undefined') {
+    console.log('✅ Using fileUrl:', file.fileUrl);
+    return file.fileUrl;
+  }
+  
+  // If the file has an imageUrl (legacy), use it
+  // But only if it's a valid, non-empty URL
+  if (file.imageUrl && file.imageUrl.trim() !== '' && file.imageUrl !== 'undefined') {
+    console.log('✅ Using imageUrl:', file.imageUrl);
+    return file.imageUrl;
+  }
+  
+  // Construct the new URL using dataset ID and file path
+  // The path should be the file's path from the manifest, or fallback to name
+  const filePath = file.path || file.name;
+  
+  // Use the API server URL from environment or default to relative path for production
+  let apiBaseUrl = (import.meta as any).env?.VITE_API_URL;
+  console.log('🔧 Environment VITE_API_URL:', apiBaseUrl);
+  
+  if (apiBaseUrl) {
+    // Development mode - use explicit API URL
+    console.log('🔧 Development mode - using explicit API URL');
+    if (apiBaseUrl.endsWith('/api')) {
+      apiBaseUrl = apiBaseUrl.slice(0, -4); // Remove '/api' suffix
+    }
+    const finalUrl = `${apiBaseUrl}/api/files/datasets/${datasetId}/${filePath}`;
+    console.log('🔧 Constructed URL (dev):', finalUrl);
+    return finalUrl;
+  } else {
+    // Production mode - use relative path (goes through nginx proxy)
+    console.log('🔧 Production mode - using relative path');
+    const finalUrl = `/api/files/datasets/${datasetId}/${filePath}`;
+    console.log('🔧 Constructed URL (prod):', finalUrl);
+    return finalUrl;
+  }
+};
+
 // Enhanced CSV Table Component
-function CSVTableView({ content }: { content: string }) {
+function CSVTableView({ content, file, datasetId }: { content: string; file: FileStructure; datasetId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -124,12 +167,22 @@ function CSVTableView({ content }: { content: string }) {
           <span className="text-sm text-muted-foreground">
             {filteredAndSortedData.length} rows
           </span>
+          <Button 
+            size="sm" 
+            className="bg-chart-1 hover:bg-chart-1/90 text-white"
+            onClick={() => {
+              const downloadUrl = getFileUrl(datasetId, file);
+              window.open(downloadUrl, '_blank');
+            }}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
         </div>
         <Input
           placeholder="Search data..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-64"
         />
       </div>
       
@@ -193,7 +246,7 @@ function CSVTableView({ content }: { content: string }) {
 }
 
 // Enhanced JSON Viewer Component
-function JSONViewer({ content }: { content: string }) {
+function JSONViewer({ content, file, datasetId }: { content: string; file: FileStructure; datasetId: string }) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['root']));
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -246,7 +299,7 @@ function JSONViewer({ content }: { content: string }) {
           
           {isExpanded && (
             <div>
-              {keys.map((key, index) => {
+              {keys.map((key) => {
                 const childPath = `${path}.${key}`;
                 const childValue = value[key];
                 return (
@@ -303,6 +356,17 @@ function JSONViewer({ content }: { content: string }) {
           <span className="text-sm text-muted-foreground">
             {Object.keys(parsedData).length} root properties
           </span>
+          <Button 
+            size="sm" 
+            className="bg-chart-1 hover:bg-chart-1/90 text-white"
+            onClick={() => {
+              const downloadUrl = getFileUrl(datasetId, file);
+              window.open(downloadUrl, '_blank');
+            }}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
         </div>
         <Input
           placeholder="Search JSON..."
@@ -322,7 +386,7 @@ function JSONViewer({ content }: { content: string }) {
 }
 
 // Enhanced Code Viewer Component
-function CodeViewer({ content, language, filename }: { content: string; language?: string; filename?: string }) {
+function CodeViewer({ content, language, filename, file, datasetId }: { content: string; language?: string; filename?: string; file: FileStructure; datasetId: string }) {
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   
   const getLanguageFromFilename = (filename: string) => {
@@ -370,6 +434,17 @@ function CodeViewer({ content, language, filename }: { content: string; language
           >
             {showLineNumbers ? 'Hide' : 'Show'} Line Numbers
           </Button>
+          <Button 
+            size="sm" 
+            className="bg-chart-1 hover:bg-chart-1/90 text-white"
+            onClick={() => {
+              const downloadUrl = getFileUrl(datasetId, file);
+              window.open(downloadUrl, '_blank');
+            }}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
         </div>
       </div>
       
@@ -411,16 +486,12 @@ function CodeViewer({ content, language, filename }: { content: string; language
 }
 
 // Enhanced PDF Viewer Component
-function PDFViewer({ file }: { file: FileStructure }) {
+function PDFViewer({ file, datasetId }: { file: FileStructure; datasetId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const getPdfUrl = () => {
-    if (file.imageUrl) {
-      return file.imageUrl;
-    }
-    // Fallback to API endpoint - construct path from name
-    return `/api/files/${file.name}`;
+    return getFileUrl(datasetId, file);
   };
 
   return (
@@ -441,7 +512,14 @@ function PDFViewer({ file }: { file: FileStructure }) {
             <ExternalLink className="h-3 w-3 mr-1" />
             Open in New Tab
           </Button>
-          <Button size="sm" className="bg-chart-1 hover:bg-chart-1/90 text-white">
+          <Button 
+            size="sm" 
+            className="bg-chart-1 hover:bg-chart-1/90 text-white"
+            onClick={() => {
+              const downloadUrl = getFileUrl(datasetId, file);
+              window.open(downloadUrl, '_blank');
+            }}
+          >
             <Download className="h-3 w-3 mr-1" />
             Download
           </Button>
@@ -571,7 +649,7 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     });
   };
 
-  const renderFilePreview = (file: FileStructure) => {
+  const renderFilePreview = (file: FileStructure, datasetId: string) => {
     const mimeType = file.mimeType?.toLowerCase() || '';
     
     console.log(`Creating preview for filetype: ${mimeType}`)
@@ -612,28 +690,41 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
 
     if (file.content) {
       if (mimeType.includes('json')) {
-        return <JSONViewer content={file.content} />;
+        return <JSONViewer content={file.content} file={file} datasetId={datasetId} />;
       }
       
       if (mimeType.includes('csv')) {
-        return <CSVTableView content={file.content} />;
+        return <CSVTableView content={file.content} file={file} datasetId={datasetId} />;
       }
       
       // Handle code files - check for various code-related MIME types
       if (mimeType.includes('text/x-') || mimeType.includes('text/javascript') || mimeType.includes('text/typescript') || mimeType.includes('text/html') || mimeType.includes('text/css') || mimeType.includes('text/xml') || mimeType.includes('text/yaml') || mimeType.includes('text/markdown') || mimeType.includes('text/plain')) {
-        return <CodeViewer content={file.content} filename={file.name} />;
+        return <CodeViewer content={file.content} filename={file.name} file={file} datasetId={datasetId} />;
       }
       
       // Fallback for any text content
       if (mimeType.includes('text')) {
         return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline">Text File</Badge>
+                  <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">Text File</Badge>
+            <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
                 {file.content.length} characters
               </span>
+              <Button 
+                size="sm" 
+                className="bg-chart-1 hover:bg-chart-1/90 text-white"
+                onClick={() => {
+                  const downloadUrl = getFileUrl(datasetId, file);
+                  window.open(downloadUrl, '_blank');
+                }}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
             </div>
+          </div>
             <ScrollArea className="h-[60vh]">
               <pre className="bg-muted p-4 rounded text-sm font-mono">
                 <code>{file.content}</code>
@@ -645,37 +736,49 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     }
     
     if (mimeType.includes('image')) {
-      if (file.imageUrl) {
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline">Image Preview</Badge>
+      const imageUrl = getFileUrl(datasetId, file);
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">Image Preview</Badge>
+            <div className="flex items-center gap-2">
               {file.size && (
                 <span className="text-sm text-muted-foreground">{file.size}</span>
               )}
-            </div>
-            <div className="flex items-center justify-center bg-muted rounded overflow-hidden">
-              <img 
-                src={file.imageUrl} 
-                alt={file.name}
-                className="max-w-full max-h-[60vh] object-contain"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
+              <Button 
+                size="sm" 
+                className="bg-chart-1 hover:bg-chart-1/90 text-white"
+                onClick={() => {
+                  const downloadUrl = getFileUrl(datasetId, file);
+                  window.open(downloadUrl, '_blank');
                 }}
-              />
-              <div className="hidden flex items-center justify-center h-64 w-full">
-                <div className="text-center">
-                  <FileImage className="h-16 w-16 mx-auto mb-4 text-chart-3" />
-                  <p className="text-sm text-muted-foreground">Image not found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Please add the image file to the public folder</p>
-                </div>
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-center bg-muted rounded overflow-hidden">
+            <img 
+              src={imageUrl} 
+              alt={file.name}
+              className="max-w-full max-h-[60vh] object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden flex items-center justify-center h-64 w-full">
+              <div className="text-center">
+                <FileImage className="h-16 w-16 mx-auto mb-4 text-chart-3" />
+                <p className="text-sm text-muted-foreground">Image not found</p>
+                <p className="text-xs text-muted-foreground mt-1">Please add the image file to the public folder</p>
               </div>
             </div>
           </div>
-        );
-      }
+        </div>
+      );
       
       return (
         <div className="flex items-center justify-center h-64 bg-muted rounded">
@@ -693,9 +796,22 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Badge variant="outline">Video File</Badge>
-            {file.size && (
-              <span className="text-sm text-muted-foreground">{file.size}</span>
-            )}
+            <div className="flex items-center gap-2">
+              {file.size && (
+                <span className="text-sm text-muted-foreground">{file.size}</span>
+              )}
+              <Button 
+                size="sm" 
+                className="bg-chart-1 hover:bg-chart-1/90 text-white"
+                onClick={() => {
+                  const downloadUrl = getFileUrl(datasetId, file);
+                  window.open(downloadUrl, '_blank');
+                }}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-center h-64 bg-muted rounded">
             <div className="text-center">
@@ -709,7 +825,7 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
     }
     
     if (mimeType.includes('pdf')) {
-      return <PDFViewer file={file} />;
+      return <PDFViewer file={file} datasetId={datasetId} />;
     }
     
     return (
@@ -791,7 +907,14 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
                       {selectedFile.size}
                     </Badge>
                   )}
-                  <Button size="sm" className="bg-chart-1 hover:bg-chart-1/90 text-white">
+                  <Button 
+                    size="sm" 
+                    className="bg-chart-1 hover:bg-chart-1/90 text-white"
+                    onClick={() => {
+                      const downloadUrl = getFileUrl(dataset.id, selectedFile);
+                      window.open(downloadUrl, '_blank');
+                    }}
+                  >
                     <Download className="h-3 w-3 mr-1" />
                     Download
                   </Button>
@@ -801,7 +924,7 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
           </CardHeader>
           <CardContent>
             {selectedFile ? (
-              renderFilePreview(selectedFile)
+              renderFilePreview(selectedFile, dataset.id)
             ) : (
               <div className="flex items-center justify-center h-full text-center">
                 <div>

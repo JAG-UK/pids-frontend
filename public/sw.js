@@ -24,6 +24,14 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache if available
 self.addEventListener('fetch', (event) => {
+  // Skip API requests and external resources - let them go directly to the network
+  if (event.request.url.includes('/api/') || 
+      event.request.url.includes('localhost:3000') ||
+      event.request.url.includes('localhost:8081') ||
+      event.request.url.includes('localhost:5173')) {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {

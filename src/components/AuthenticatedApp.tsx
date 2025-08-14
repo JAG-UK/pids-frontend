@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@components/LoadingSpinner';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient, isUsingMockData } from '../utils/apiClient';
+import { toast } from 'sonner';
 
 // Mock file structures for explore feature
 const mockFileStructures = {
@@ -272,8 +273,51 @@ export function AuthenticatedApp() {
     }
   };
 
-  const handleRemoveDataset = (id: string) => {
-    setDatasets(prev => prev.filter(d => d.id !== id));
+  const handleRemoveDataset = async (id: string) => {
+    try {
+      console.log(`🗑️ Admin delete request for dataset: ${id}`);
+      
+      // Get the current token for authentication
+      const token = keycloak?.token;
+      if (!token) {
+        console.error('❌ No authentication token available');
+        return;
+      }
+      
+      // Call the API to delete the dataset
+      const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || '/api'}/datasets/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Dataset deleted successfully:', result);
+      
+      // Remove from local state only after successful API deletion
+      setDatasets(prev => prev.filter(d => d.id !== id));
+      
+      // Show success notification
+      toast.success('Dataset deleted successfully', {
+        description: `"${result.message}" - All files and data have been permanently removed.`
+      });
+      
+    } catch (error) {
+      console.error('❌ Error deleting dataset:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Show error notification
+      toast.error('Failed to delete dataset', {
+        description: errorMessage
+      });
+    }
   };
 
   const handleExploreDataset = (dataset: Dataset) => {

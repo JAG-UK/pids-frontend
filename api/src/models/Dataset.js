@@ -8,7 +8,6 @@ const fileStructureSchema = new mongoose.Schema({
   imageUrl: { type: String },
   content: { type: String }, // Add content field for file previews
   children: [{ type: mongoose.Schema.Types.Mixed }],
-  // New fields for manifest format
   hash: { type: String },
   cid: { type: String },
   byte_length: { type: Number },
@@ -18,6 +17,7 @@ const fileStructureSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const datasetSchema = new mongoose.Schema({
+  _id: { type: String }, // Use manifest UUID as the document ID
   title: { type: String, required: true },
   description: { type: String, required: true },
   format: { type: String, required: true },
@@ -29,7 +29,6 @@ const datasetSchema = new mongoose.Schema({
   isPublic: { type: Boolean, default: true },
   createdBy: { type: String, default: 'admin' },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-  // New fields for manifest format
   manifestFile: { type: String }, // Path to manifest file in MinIO
   manifestData: { type: mongoose.Schema.Types.Mixed }, // Original manifest data
   spec: { type: String }, // @spec from manifest
@@ -39,7 +38,7 @@ const datasetSchema = new mongoose.Schema({
   openWith: { type: String }, // open_with from manifest
   license: { type: String }, // license from manifest
   projectUrl: { type: String }, // project_url from manifest
-  uuid: { type: String }, // uuid from manifest
+  uuid: { type: String }, // uuid from manifest (kept for backward compatibility)
   nPieces: { type: Number }, // n_pieces from manifest
   pieces: [{ type: mongoose.Schema.Types.Mixed }] // pieces array from manifest
 }, { timestamps: true });

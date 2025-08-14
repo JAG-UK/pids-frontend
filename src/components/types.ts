@@ -36,6 +36,9 @@ export interface FileStructure {
   media_type?: string;
   piece_cid?: string;
   parts?: any[]; // For split-files
+  // New file handling fields
+  path?: string; // File path from manifest
+  fileUrl?: string; // Constructed file URL for new dataset format
 }
 
 export interface SearchFilters {

@@ -159,7 +159,7 @@ router.get('/datasets/:datasetId/:filepath(*)', async (req, res) => {
       throw error;
     }
     
-    // Set appropriate headers
+    // Set appropriate headers (CORS handled by nginx proxy)
     res.setHeader('Content-Type', stat.metaData?.['content-type'] || 'application/octet-stream');
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year

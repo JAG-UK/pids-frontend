@@ -77,8 +77,8 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// File upload middleware
-app.use(fileUpload({
+// File upload middleware - only for /api/files routes
+app.use('/api/files', fileUpload({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
   abortOnLimit: true,
   useTempFiles: false, // Keep files in memory for MinIO upload

@@ -91,6 +91,7 @@ export const parseManifest = (manifestData) => {
     
     // Create dataset object
     const dataset = {
+      _id: manifestData.uuid, // Use UUID as the document ID
       title: manifestData.name,
       description: manifestData.description,
       format: format,
@@ -107,7 +108,7 @@ export const parseManifest = (manifestData) => {
       openWith: manifestData.open_with,
       license: manifestData.license,
       projectUrl: manifestData.project_url,
-      uuid: manifestData.uuid,
+      uuid: manifestData.uuid, // uuid from manifest (kept for backward compatibility)
       nPieces: manifestData.n_pieces,
       pieces: manifestData.pieces || []
     };

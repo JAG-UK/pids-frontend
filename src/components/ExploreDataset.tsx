@@ -5,7 +5,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
 import { ExploreDatasetProps, FileStructure } from './types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -20,7 +20,7 @@ import {
   FileJson,
   Download,
   ChevronRight,
-  Search,
+
   ChevronUp,
   ChevronDown,
   Code,
@@ -246,7 +246,7 @@ function JSONViewer({ content }: { content: string }) {
           
           {isExpanded && (
             <div>
-              {keys.map((key, index) => {
+              {keys.map((key) => {
                 const childPath = `${path}.${key}`;
                 const childValue = value[key];
                 return (

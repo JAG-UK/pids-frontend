@@ -126,7 +126,7 @@ router.post('/upload-manifest', upload.single('manifest'), async (req, res) => {
 // GET /api/datasets - Get datasets (filtered by authentication)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { search, format, tags, page = 1, limit = 10 } = req.query;
+    const { search, format, tags, page = 1, limit = 20 } = req.query;
     
     console.log('🔍 GET /api/datasets - Auth state:', { 
       hasUser: !!req.user, 
@@ -275,8 +275,10 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`🗑️ Admin delete request for dataset: ${id}`);
     
-    const dataset = await Dataset.findByIdAndDelete(id);
+    // Find the dataset first to get its details for MinIO cleanup
+    const dataset = await Dataset.findById(id);
     
     if (!dataset) {
       return res.status(404).json({
@@ -285,11 +287,61 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
       });
     }
     
+    console.log(`📁 Dataset found: ${dataset.title} (${dataset._id})`);
+    
+    // Delete from MinIO: remove the entire dataset directory and manifest file
+    try {
+      const client = getMinIOClient();
+      const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
+      
+      // Delete manifest file if it exists
+      if (dataset.manifestFile) {
+        try {
+          await client.removeObject(bucketName, dataset.manifestFile);
+          console.log(`🗑️ Deleted manifest file: ${dataset.manifestFile}`);
+        } catch (error) {
+          console.warn(`⚠️ Could not delete manifest file: ${error.message}`);
+        }
+      }
+      
+      // Delete the entire dataset directory and all its contents
+      const datasetPath = `datasets/${dataset._id}`;
+      try {
+        // List all objects in the dataset directory
+        const objects = client.listObjects(bucketName, datasetPath, true);
+        const objectsToDelete = [];
+        
+        for await (const obj of objects) {
+          objectsToDelete.push(obj.name);
+        }
+        
+        // Delete all objects in the dataset directory
+        if (objectsToDelete.length > 0) {
+          await client.removeObjects(bucketName, objectsToDelete);
+          console.log(`🗑️ Deleted ${objectsToDelete.length} files from MinIO:`, objectsToDelete);
+        }
+        
+        console.log(`🗑️ Completed MinIO cleanup for dataset: ${dataset._id}`);
+      } catch (error) {
+        console.warn(`⚠️ Could not delete dataset files from MinIO: ${error.message}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ MinIO cleanup failed: ${error.message}`);
+      // Continue with database deletion even if MinIO cleanup fails
+    }
+    
+    // Delete from database
+    await Dataset.findByIdAndDelete(id);
+    console.log(`🗑️ Dataset deleted from database: ${id}`);
+    
     res.json({
       success: true,
-      message: 'Dataset deleted successfully'
+      message: 'Dataset and all associated files deleted successfully'
     });
+    
   } catch (error) {
+    console.error(`❌ Dataset deletion failed: ${error.message}`);
     res.status(500).json({
       success: false,
       error: error.message

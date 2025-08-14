@@ -16,6 +16,7 @@ export function DatasetCard({
   onExplore 
 }: DatasetCardProps) {
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -135,15 +136,52 @@ export function DatasetCard({
                     </Button>
                   )}
                   {onRemove && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => onRemove(dataset.id)}
-                      className="flex-1"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
+                    <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Confirm Deletion</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete "{dataset.name}"? This action cannot be undone and will permanently remove:
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                            <li>The dataset from the database</li>
+                            <li>All associated files from storage</li>
+                            <li>The manifest file</li>
+                          </ul>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setShowDeleteConfirm(false)}
+                              className="flex-1"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              onClick={() => {
+                                onRemove(dataset.id);
+                                setShowDeleteConfirm(false);
+                              }}
+                              className="flex-1"
+                            >
+                              Delete Permanently
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </>
               )}

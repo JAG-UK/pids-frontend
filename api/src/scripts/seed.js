@@ -51,6 +51,7 @@ const mockDatasets = [
       }
     ],
     isPublic: true,
+    status: 'approved',
     createdBy: "admin"
   },
   {
@@ -150,6 +151,7 @@ const mockDatasets = [
       }
     ],
     isPublic: true,
+    status: 'approved',
     createdBy: "admin"
   },
   {
@@ -168,39 +170,22 @@ const mockDatasets = [
         path: "/images",
         children: [
           {
-            name: "cat1.jpg",
+            name: "persian_cat.jpg",
             type: "file",
             size: 2048576,
-            path: "/images/cat1.jpg",
-            imageUrl: "/api/files/cat1.jpg"
+            path: "/images/persian_cat.jpg"
           },
           {
-            name: "cat2.jpg",
+            name: "siamese_cat.jpg",
             type: "file",
             size: 1876544,
-            path: "/images/cat2.jpg",
-            imageUrl: "/api/files/cat2.jpg"
+            path: "/images/siamese_cat.jpg"
           },
           {
-            name: "cat3.jpg",
+            name: "orange_tabby.jpg",
             type: "file",
             size: 2150400,
-            path: "/images/cat3.jpg",
-            imageUrl: "/api/files/cat3.jpg"
-          },
-          {
-            name: "cat4.jpg",
-            type: "file",
-            size: 1984512,
-            path: "/images/cat4.jpg",
-            imageUrl: "/api/files/cat4.jpg"
-          },
-          {
-            name: "cat5.jpg",
-            type: "file",
-            size: 2232320,
-            path: "/images/cat5.jpg",
-            imageUrl: "/api/files/cat5.jpg"
+            path: "/images/orange_tabby.jpg"
           }
         ]
       },
@@ -213,57 +198,44 @@ const mockDatasets = [
   "collection_info": {
     "name": "Cat Photography Collection",
     "description": "High-quality cat photographs for ML training",
-    "total_images": 5,
+    "total_images": 3,
     "total_size_mb": 9.9,
     "date_created": "2024-03-10"
   },
   "images": [
     {
-      "filename": "cat1.jpg",
+      "filename": "persian_cat.jpg",
       "breed": "Persian",
       "age": "3 years",
       "setting": "indoor",
       "tags": ["fluffy", "white", "portrait"]
     },
     {
-      "filename": "cat2.jpg",
+      "filename": "siamese_cat.jpg",
       "breed": "Siamese",
       "age": "2 years",
       "setting": "outdoor",
       "tags": ["elegant", "brown", "action"]
     },
     {
-      "filename": "cat3.jpg",
-      "breed": "Maine Coon",
+      "filename": "orange_tabby.jpg",
+      "breed": "Orange Tabby",
       "age": "4 years",
       "setting": "indoor",
       "tags": ["large", "orange", "sleeping"]
-    },
-    {
-      "filename": "cat4.jpg",
-      "breed": "British Shorthair",
-      "age": "1 year",
-      "setting": "outdoor",
-      "tags": ["gray", "playful", "garden"]
-    },
-    {
-      "filename": "cat5.jpg",
-      "breed": "Ragdoll",
-      "age": "2 years",
-      "setting": "indoor",
-      "tags": ["blue", "relaxed", "window"]
     }
   ],
   "statistics": {
-    "breeds": ["Persian", "Siamese", "Maine Coon", "British Shorthair", "Ragdoll"],
+    "breeds": ["Persian", "Siamese", "Orange Tabby"],
     "settings": ["indoor", "outdoor"],
-    "average_age": 2.4,
+    "average_age": 3.0,
     "most_common_breed": "Mixed"
   }
 }`
       }
     ],
     isPublic: true,
+    status: 'approved',
     createdBy: "admin"
   },
   {
@@ -296,6 +268,7 @@ const mockDatasets = [
       }
     ],
     isPublic: true,
+    status: 'approved',
     createdBy: "admin"
   },
   {
@@ -390,6 +363,7 @@ const mockDatasets = [
       }
     ],
     isPublic: true,
+    status: 'approved',
     createdBy: "admin"
   }
 ];

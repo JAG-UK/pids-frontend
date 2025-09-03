@@ -20,7 +20,7 @@ const datasetSchema = new mongoose.Schema({
   _id: { type: String }, // Use manifest UUID as the document ID
   title: { type: String, required: true },
   description: { type: String, required: true },
-  format: { type: String, required: true },
+  format: { type: String, required: false },
   size: { type: Number, required: true },
   tags: [{ type: String }],
   dateCreated: { type: Date, default: Date.now },

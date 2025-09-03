@@ -1,0 +1,16 @@
+{
+  "total_population": 331449281,
+  "age_groups": {
+    "0-18": 22.3,
+    "19-64": 61.2,
+    "65+": 16.5
+  },
+  "ethnicity": {
+    "white": 57.8,
+    "hispanic": 18.7,
+    "black": 12.1,
+    "asian": 6.0,
+    "other": 5.4
+  }
+}
+

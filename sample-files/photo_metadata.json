@@ -1,0 +1,20 @@
+{
+  "collection_info": {
+    "title": "Cat Photography Collection",
+    "photographer": "Sarah Johnson",
+    "date_created": "2024-01-15",
+    "total_photos": 7
+  },
+  "categories": {
+    "portraits": 3,
+    "action_shots": 2,
+    "cute_moments": 2
+  },
+  "technical_details": {
+    "camera": "Canon EOS R5",
+    "lens": "70-200mm f/2.8",
+    "resolution": "45MP",
+    "format": "RAW + JPEG"
+  }
+}
+

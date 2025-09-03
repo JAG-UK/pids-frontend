@@ -365,6 +365,645 @@ const mockDatasets = [
     isPublic: true,
     status: 'approved',
     createdBy: "admin"
+  },
+  {
+    title: "Comprehensive Sample Dataset",
+    description: "A comprehensive collection of sample files demonstrating various file types and formats. Includes PDF documents, JSON data, CSS stylesheets, TypeScript code, Python scripts, and more. Perfect for testing file previews and downloads.",
+    size: 15728640,
+    tags: ["sample", "demo", "testing", "documentation", "code", "data"],
+    dateCreated: new Date("2024-01-10"),
+    dateUpdated: new Date("2024-01-10"),
+    fileStructure: [
+      {
+        name: "documents",
+        type: "directory",
+        size: 0,
+        path: "/documents",
+        children: [
+          {
+            name: "sample-pdf-1.pdf",
+            type: "file",
+            size: 2097152,
+            path: "/documents/sample-pdf-1.pdf"
+          },
+          {
+            name: "README.md",
+            type: "file",
+            size: 1024,
+            path: "/documents/README.md",
+            content: `# Comprehensive Sample Dataset
+
+This dataset contains various file types for testing purposes:
+
+## File Types Included:
+- **PDF Documents**: Sample PDF files
+- **JSON Data**: Structured data files
+- **CSS Stylesheets**: Web styling files
+- **TypeScript Code**: TypeScript source files
+- **Python Scripts**: Python code files
+- **HTML Pages**: Web page files
+- **Configuration Files**: YAML, JSON configs
+
+## Usage:
+This dataset is designed to test file previews, downloads, and various file type handling in the PIDS system.
+
+## File Structure:
+- \`/documents/\` - PDF and documentation files
+- \`/data/\` - JSON and CSV data files
+- \`/code/\` - Source code files
+- \`/styles/\` - CSS and styling files
+- \`/config/\` - Configuration files
+
+Each file type demonstrates different preview capabilities and download handling.`
+          }
+        ]
+      },
+      {
+        name: "data",
+        type: "directory",
+        size: 0,
+        path: "/data",
+        children: [
+          {
+            name: "demographics.json",
+            type: "file",
+            size: 2048,
+            path: "/data/demographics.json",
+            content: `{
+  "metadata": {
+    "dataset": "Demographics Sample",
+    "version": "1.0",
+    "description": "Sample demographic data for testing"
+  },
+  "data": [
+    {
+      "id": 1,
+      "age": 25,
+      "gender": "female",
+      "location": "New York",
+      "income": 75000
+    },
+    {
+      "id": 2,
+      "age": 32,
+      "gender": "male",
+      "location": "Los Angeles",
+      "income": 85000
+    },
+    {
+      "id": 3,
+      "age": 28,
+      "gender": "female",
+      "location": "Chicago",
+      "income": 65000
+    }
+  ],
+  "summary": {
+    "total_records": 3,
+    "average_age": 28.3,
+    "average_income": 75000
+  }
+}`
+          },
+          {
+            name: "photo_metadata.json",
+            type: "file",
+            size: 1536,
+            path: "/data/photo_metadata.json",
+            content: `{
+  "photos": [
+    {
+      "id": "photo_001",
+      "filename": "cat1.jpg",
+      "camera": "Canon EOS R5",
+      "settings": {
+        "aperture": "f/2.8",
+        "shutter_speed": "1/200",
+        "iso": 400,
+        "focal_length": "85mm"
+      },
+      "location": "Studio",
+      "tags": ["portrait", "indoor", "professional"]
+    },
+    {
+      "id": "photo_002",
+      "filename": "cat2.jpg",
+      "camera": "Sony A7R IV",
+      "settings": {
+        "aperture": "f/4.0",
+        "shutter_speed": "1/500",
+        "iso": 200,
+        "focal_length": "50mm"
+      },
+      "location": "Outdoor Garden",
+      "tags": ["action", "outdoor", "natural_light"]
+    }
+  ]
+}`
+          }
+        ]
+      },
+      {
+        name: "code",
+        type: "directory",
+        size: 0,
+        path: "/code",
+        children: [
+          {
+            name: "data_analysis.py",
+            type: "file",
+            size: 3072,
+            path: "/code/data_analysis.py",
+            content: `#!/usr/bin/env python3
+"""
+Data Analysis Script
+Sample Python script for data processing and analysis
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import List, Dict, Any
+
+class DataAnalyzer:
+    """A class for performing data analysis tasks."""
+    
+    def __init__(self, data_path: str):
+        self.data_path = data_path
+        self.data = None
+        
+    def load_data(self) -> pd.DataFrame:
+        """Load data from CSV file."""
+        try:
+            self.data = pd.read_csv(self.data_path)
+            print(f"Loaded {len(self.data)} records")
+            return self.data
+        except FileNotFoundError:
+            print(f"Error: File {self.data_path} not found")
+            return None
+    
+    def analyze_temperature(self) -> Dict[str, Any]:
+        """Analyze temperature data."""
+        if self.data is None:
+            return {"error": "No data loaded"}
+        
+        analysis = {
+            "mean_temp": self.data['Temperature_C'].mean(),
+            "max_temp": self.data['Temperature_C'].max(),
+            "min_temp": self.data['Temperature_C'].min(),
+            "std_temp": self.data['Temperature_C'].std()
+        }
+        
+        return analysis
+    
+    def plot_temperature_trend(self, save_path: str = None):
+        """Create temperature trend plot."""
+        plt.figure(figsize=(12, 6))
+        plt.plot(self.data['Date'], self.data['Temperature_C'])
+        plt.title('Temperature Trend Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Temperature (°C)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path)
+        else:
+            plt.show()
+
+if __name__ == "__main__":
+    analyzer = DataAnalyzer("temperature_data.csv")
+    data = analyzer.load_data()
+    
+    if data is not None:
+        analysis = analyzer.analyze_temperature()
+        print("Temperature Analysis:", analysis)
+        analyzer.plot_temperature_trend()
+`
+          },
+          {
+            name: "chart-utils.js",
+            type: "file",
+            size: 4096,
+            path: "/code/chart-utils.js",
+            content: `/**
+ * Chart Utilities
+ * JavaScript utilities for creating and managing charts
+ */
+
+class ChartUtils {
+    constructor() {
+        this.charts = new Map();
+        this.defaultColors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+        ];
+    }
+
+    /**
+     * Create a line chart
+     * @param {string} containerId - DOM element ID
+     * @param {Array} data - Chart data
+     * @param {Object} options - Chart options
+     */
+    createLineChart(containerId, data, options = {}) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error('Container not found:', containerId);
+            return null;
+        }
+
+        const chart = {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                ...options
+            }
+        };
+
+        this.charts.set(containerId, chart);
+        return chart;
+    }
+
+    /**
+     * Create a bar chart
+     * @param {string} containerId - DOM element ID
+     * @param {Array} data - Chart data
+     * @param {Object} options - Chart options
+     */
+    createBarChart(containerId, data, options = {}) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error('Container not found:', containerId);
+            return null;
+        }
+
+        const chart = {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                ...options
+            }
+        };
+
+        this.charts.set(containerId, chart);
+        return chart;
+    }
+
+    /**
+     * Update chart data
+     * @param {string} containerId - Chart container ID
+     * @param {Array} newData - New chart data
+     */
+    updateChart(containerId, newData) {
+        const chart = this.charts.get(containerId);
+        if (chart) {
+            chart.data = newData;
+            // Trigger chart update (implementation depends on chart library)
+            console.log('Chart updated:', containerId);
+        }
+    }
+
+    /**
+     * Destroy a chart
+     * @param {string} containerId - Chart container ID
+     */
+    destroyChart(containerId) {
+        const chart = this.charts.get(containerId);
+        if (chart) {
+            // Clean up chart resources
+            this.charts.delete(containerId);
+            console.log('Chart destroyed:', containerId);
+        }
+    }
+
+    /**
+     * Get random color from palette
+     * @returns {string} Color hex code
+     */
+    getRandomColor() {
+        return this.defaultColors[Math.floor(Math.random() * this.defaultColors.length)];
+    }
+
+    /**
+     * Format number for display
+     * @param {number} value - Number to format
+     * @param {number} decimals - Decimal places
+     * @returns {string} Formatted number
+     */
+    formatNumber(value, decimals = 2) {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        }).format(value);
+    }
+}
+
+// Export for use in modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ChartUtils;
+}
+
+// Global instance
+window.ChartUtils = new ChartUtils();
+`
+          }
+        ]
+      },
+      {
+        name: "styles",
+        type: "directory",
+        size: 0,
+        path: "/styles",
+        children: [
+          {
+            name: "styles.css",
+            type: "file",
+            size: 2048,
+            path: "/styles/styles.css",
+            content: `/* Comprehensive Sample Dataset Styles */
+
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+/* Header styles */
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin-bottom: 0.5rem;
+}
+
+.header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Card styles */
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+/* Button styles */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: #2980b9;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+}
+
+.btn-secondary:hover {
+    background: #7f8c8d;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Grid layout */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+`
+          }
+        ]
+      },
+      {
+        name: "config",
+        type: "directory",
+        size: 0,
+        path: "/config",
+        children: [
+          {
+            name: "config.yaml",
+            type: "file",
+            size: 1024,
+            path: "/config/config.yaml",
+            content: `# Application Configuration
+# Comprehensive Sample Dataset Configuration
+
+# Database settings
+database:
+  host: localhost
+  port: 27017
+  name: pids_database
+  connection_pool_size: 10
+  timeout: 30
+
+# API settings
+api:
+  host: 0.0.0.0
+  port: 3000
+  cors_origins:
+    - http://localhost:3000
+    - http://localhost:8080
+  rate_limit:
+    window_ms: 900000
+    max_requests: 100
+
+# File storage settings
+storage:
+  type: minio
+  endpoint: localhost:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  bucket: pids-files
+  region: us-east-1
+
+# Authentication settings
+auth:
+  provider: keycloak
+  realm: pids
+  client_id: pids-frontend
+  public_key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..."
+  token_verify_url: http://localhost:8081/realms/pids/protocol/openid-connect/token/introspect
+
+# Logging settings
+logging:
+  level: info
+  format: json
+  output: stdout
+  file:
+    enabled: false
+    path: /var/log/pids/app.log
+    max_size: 10MB
+    max_files: 5
+
+# Feature flags
+features:
+  file_preview: true
+  file_download: true
+  admin_panel: true
+  public_datasets: true
+  search: true
+  filtering: true
+
+# Security settings
+security:
+  helmet_enabled: true
+  rate_limiting: true
+  cors_enabled: true
+  content_security_policy: true
+`
+          }
+        ]
+      }
+    ],
+    isPublic: true,
+    status: 'approved',
+    createdBy: "admin"
   }
 ];
 
@@ -386,19 +1025,12 @@ const seedDatabase = async () => {
     console.log('\n📊 Database Summary:');
     console.log(`Total datasets: ${datasets.length}`);
     
-    const formatCounts = {};
     const tagCounts = {};
     
     datasets.forEach(dataset => {
-      formatCounts[dataset.format] = (formatCounts[dataset.format] || 0) + 1;
       dataset.tags.forEach(tag => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
-    });
-    
-    console.log('\nFormats:');
-    Object.entries(formatCounts).forEach(([format, count]) => {
-      console.log(`  ${format}: ${count}`);
     });
     
     console.log('\nTop Tags:');

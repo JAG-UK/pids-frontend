@@ -42,10 +42,10 @@ const LandingPage: React.FC = () => {
           Discover and explore public datasets stored on the Filecoin network. 
           Access high-quality data from climate research to population statistics, 
           WWW archives to warzone journalism.
+
+          Decentralized • Permanent • Accessible
         </p>
-        <p className="mb-12 max-w-3xl text-xl leading-relaxed md:text-2xl lg:text-3xl">
-            Decentralized • Permanent • Accessible
-        </p>
+
         
         {/* Call to Action Buttons */}
         <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">

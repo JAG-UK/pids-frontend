@@ -9,12 +9,10 @@ import { Grid, List } from 'lucide-react';
 export function PublicDirectory({ datasets, onExploreDataset }: PublicDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{
-    format: string[];
     tags: string[];
     dateRange: 'all' | 'week' | 'month' | 'year';
     sizeRange: 'all' | 'small' | 'medium' | 'large';
   }>({
-    format: [],
     tags: [],
     dateRange: 'all',
     sizeRange: 'all'
@@ -31,13 +29,6 @@ export function PublicDirectory({ datasets, onExploreDataset }: PublicDirectoryP
         dataset.name.toLowerCase().includes(query) ||
         dataset.description.toLowerCase().includes(query) ||
         dataset.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply format filter
-    if (filters.format.length > 0) {
-      filtered = filtered.filter(dataset =>
-        filters.format.includes(dataset.format)
       );
     }
 

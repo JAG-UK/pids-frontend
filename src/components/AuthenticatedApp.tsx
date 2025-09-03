@@ -105,7 +105,6 @@ export const mockDatasets: Dataset[] = [
     verifiedDate: '2024-01-16',
     description: 'Comprehensive climate data including temperature, precipitation, and wind patterns for 2024.',
     size: '2.3 GB',
-    format: 'CSV',
     tags: ['climate', 'weather', 'temperature'],
     downloadUrl: '#',
     files: mockFileStructures['1']
@@ -119,7 +118,6 @@ export const mockDatasets: Dataset[] = [
     verifiedDate: '2024-01-13',
     description: 'Detailed population demographics and statistics from the latest census.',
     size: '1.8 GB',
-    format: 'JSON',
     tags: ['demographics', 'population', 'census'],
     downloadUrl: '#',
     files: mockFileStructures['2']
@@ -132,7 +130,6 @@ export const mockDatasets: Dataset[] = [
     status: 'pending',
     description: 'Quarterly economic indicators including GDP, unemployment, and inflation data.',
     size: '450 MB',
-    format: 'Excel',
     tags: ['economics', 'gdp', 'indicators'],
     downloadUrl: '#'
   },
@@ -145,7 +142,6 @@ export const mockDatasets: Dataset[] = [
     verifiedDate: '2024-01-09',
     description: 'Real-time traffic flow data from major highways and urban centers.',
     size: '3.1 GB',
-    format: 'CSV',
     tags: ['traffic', 'transportation', 'urban'],
     downloadUrl: '#'
   },
@@ -157,7 +153,6 @@ export const mockDatasets: Dataset[] = [
     status: 'pending',
     description: 'Monthly energy consumption patterns across residential and commercial sectors.',
     size: '890 MB',
-    format: 'PDF',
     tags: ['energy', 'consumption', 'sustainability'],
     downloadUrl: '#'
   },
@@ -170,7 +165,6 @@ export const mockDatasets: Dataset[] = [
     verifiedDate: '2024-01-16',
     description: 'A curated collection of high-quality cat photographs showcasing various breeds, poses, and moments. Perfect for pet photography portfolios and educational materials.',
     size: '18.7 MB',
-    format: 'JPEG',
     tags: ['photography', 'cats', 'pets', 'images', 'portraits'],
     downloadUrl: '#',
     files: mockFileStructures['6']
@@ -197,7 +191,7 @@ export function AuthenticatedApp() {
         // Get token if user is authenticated
         const token = keycloak?.token;
         console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none');
-        const result = await apiClient.getDatasets('', { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
+        const result = await apiClient.getDatasets('', { tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
         console.log('📊 AuthenticatedApp: loadDatasets result:', result);
         console.log('📊 AuthenticatedApp: Number of datasets in result:', result.datasets?.length || 0);
         console.log('📊 AuthenticatedApp: Datasets array:', result.datasets);

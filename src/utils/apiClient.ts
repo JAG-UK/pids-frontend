@@ -21,7 +21,6 @@ const mockDatasets: Dataset[] = [
     status: "pending",
     verifiedDate: "2024-01-15",
     description: "Comprehensive climate data collected from various research stations across the globe. Includes temperature, humidity, and atmospheric pressure readings.",
-    format: "CSV",
     size: "2.0 MB",
     tags: ["climate", "research", "environmental"],
     downloadUrl: "#",
@@ -76,7 +75,6 @@ const mockDatasets: Dataset[] = [
     status: "pending",
     verifiedDate: "2024-02-20",
     description: "Traffic flow data from major metropolitan areas. Contains vehicle counts, speed measurements, and congestion indicators.",
-    format: "JSON",
     size: "1.5 MB",
     tags: ["traffic", "urban", "transportation"],
     downloadUrl: "#",
@@ -178,7 +176,6 @@ const mockDatasets: Dataset[] = [
     status: "pending",
     verifiedDate: "2024-03-10",
     description: "A curated collection of high-quality cat photographs from various breeds and settings. Perfect for machine learning training or artistic reference.",
-    format: "JPEG",
     size: "50.0 MB",
     tags: ["photography", "cats", "images", "animals"],
     downloadUrl: "#",
@@ -299,7 +296,6 @@ const mockDatasets: Dataset[] = [
     status: "pending",
     verifiedDate: "2024-01-30",
     description: "Historical stock market data with technical indicators and trading signals. Includes price movements, volume analysis, and market sentiment metrics.",
-    format: "CSV",
     size: "4.0 MB",
     tags: ["finance", "trading", "stocks", "analysis"],
     downloadUrl: "#",
@@ -334,7 +330,6 @@ const mockDatasets: Dataset[] = [
     status: "pending",
     verifiedDate: "2024-02-15",
     description: "Collection of medical scans including X-rays, CT scans, and MRI images. Anonymized patient data for research purposes.",
-    format: "DICOM",
     size: "100.0 MB",
     tags: ["medical", "imaging", "healthcare", "research"],
     downloadUrl: "#",
@@ -467,7 +462,6 @@ const transformDataset = (apiDataset: any): Dataset => {
       verifiedDate: apiDataset.dateUpdated ? new Date(apiDataset.dateUpdated).toISOString().split('T')[0] : '',
       description: apiDataset.description,
       size: formatBytes(apiDataset.size),
-      format: apiDataset.format,
       tags: apiDataset.tags || [],
       downloadUrl: '#', // Placeholder
       files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined,
@@ -579,11 +573,6 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
       if (!matchesSearch) return false;
     }
 
-    // Format filter
-    if (filters.format && filters.format.length > 0) {
-      if (!filters.format.includes(dataset.format)) return false;
-    }
-
     // Tags filter
     if (filters.tags && filters.tags.length > 0) {
       const hasMatchingTag = filters.tags.some(tag => 
@@ -610,7 +599,7 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
 
 // Mock API functions
 const mockApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20): Promise<PaginatedDatasets> {
     // Simulate network delay
     await delay(300);
     
@@ -694,14 +683,13 @@ const mockApi = {
 
 // Real API functions
 const realApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string): Promise<PaginatedDatasets> {
     console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token });
     console.log('🌐 API_BASE_URL:', API_BASE_URL);
     
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (filters.format && filters.format.length > 0) params.append('format', filters.format.join(','));
       if (filters.tags && filters.tags.length > 0) params.append('tags', filters.tags.join(','));
       params.append('page', page.toString());
       params.append('limit', limit.toString());
@@ -950,7 +938,7 @@ const realApi = {
 
 // Main API client that switches between real and mock
 export const apiClient = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { format: [], tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
     try {
       if (USE_MOCK_DATA) {
         console.log('🔄 Using mock data for getDatasets');
@@ -1059,6 +1047,72 @@ export const apiClient = {
       console.warn('Real API failed, falling back to mock data:', error);
       console.log('🔄 Falling back to mock data for rejectDataset due to real API failure.');
       return await mockApi.rejectDataset(id);
+    }
+  },
+
+  async getTags(): Promise<{ tag: string; count: number }[]> {
+    try {
+      if (USE_MOCK_DATA) {
+        console.log('🔄 Using mock data for getTags');
+        // Return mock tag stats based on the actual dataset tags
+        return [
+          { tag: 'research', count: 2 },
+          { tag: 'climate', count: 1 },
+          { tag: 'environmental', count: 1 },
+          { tag: 'traffic', count: 1 },
+          { tag: 'urban', count: 1 },
+          { tag: 'transportation', count: 1 },
+          { tag: 'medical', count: 1 },
+          { tag: 'imaging', count: 1 },
+          { tag: 'healthcare', count: 1 },
+          { tag: 'finance', count: 1 },
+          { tag: 'trading', count: 1 },
+          { tag: 'stocks', count: 1 },
+          { tag: 'analysis', count: 1 },
+          { tag: 'photography', count: 1 },
+          { tag: 'cats', count: 1 },
+          { tag: 'images', count: 1 },
+          { tag: 'animals', count: 1 }
+        ];
+      } else {
+        console.log('🔄 Using real API for getTags');
+        const response = await fetch(`${API_BASE_URL}/datasets/tags`);
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to fetch tags');
+        }
+
+        return result.data;
+      }
+    } catch (error) {
+      console.warn('Real API failed, falling back to mock data:', error);
+      console.log('🔄 Falling back to mock data for getTags due to real API failure.');
+      // Return mock tag stats as fallback
+      return [
+        { tag: 'research', count: 2 },
+        { tag: 'climate', count: 1 },
+        { tag: 'environmental', count: 1 },
+        { tag: 'traffic', count: 1 },
+        { tag: 'urban', count: 1 },
+        { tag: 'transportation', count: 1 },
+        { tag: 'medical', count: 1 },
+        { tag: 'imaging', count: 1 },
+        { tag: 'healthcare', count: 1 },
+        { tag: 'finance', count: 1 },
+        { tag: 'trading', count: 1 },
+        { tag: 'stocks', count: 1 },
+        { tag: 'analysis', count: 1 },
+        { tag: 'photography', count: 1 },
+        { tag: 'cats', count: 1 },
+        { tag: 'images', count: 1 },
+        { tag: 'animals', count: 1 }
+      ];
     }
   }
 };

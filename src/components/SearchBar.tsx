@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
@@ -7,9 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { Checkbox } from '@components/ui/checkbox';
 import { Label } from '@components/ui/label';
 import { useDebounce } from '../hooks/useDebounce';
+import { apiClient } from '../utils/apiClient';
 
 interface SearchFilters {
-  format: string[];
   tags: string[];
   dateRange: 'all' | 'week' | 'month' | 'year';
   sizeRange: 'all' | 'small' | 'medium' | 'large';
@@ -22,9 +22,6 @@ interface SearchBarProps {
   className?: string;
 }
 
-const availableFormats = ['CSV', 'JSON', 'Excel', 'PDF', 'XML'];
-const availableTags = ['climate', 'weather', 'temperature', 'demographics', 'population', 'census', 'economics', 'gdp', 'indicators', 'traffic', 'transportation', 'urban', 'energy', 'consumption', 'sustainability'];
-
 export function SearchBar({ 
   onSearch, 
   onFiltersChange, 
@@ -34,13 +31,33 @@ export function SearchBar({
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
-    format: [],
     tags: [],
     dateRange: 'all',
     sizeRange: 'all'
   });
+  const [availableTags, setAvailableTags] = useState<{ tag: string; count: number }[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Fetch available tags on component mount
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        setIsLoadingTags(true);
+        const tags = await apiClient.getTags();
+        setAvailableTags(tags);
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+        // Fallback to empty array
+        setAvailableTags([]);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
 
   // Trigger search when debounced query changes
   React.useEffect(() => {
@@ -59,15 +76,6 @@ export function SearchBar({
     }));
   }, []);
 
-  const handleFormatToggle = useCallback((format: string) => {
-    setFilters(prev => ({
-      ...prev,
-      format: prev.format.includes(format)
-        ? prev.format.filter(f => f !== format)
-        : [...prev.format, format]
-    }));
-  }, []);
-
   const handleTagToggle = useCallback((tag: string) => {
     setFilters(prev => ({
       ...prev,
@@ -79,15 +87,13 @@ export function SearchBar({
 
   const clearFilters = useCallback(() => {
     setFilters({
-      format: [],
       tags: [],
       dateRange: 'all',
       sizeRange: 'all'
     });
   }, []);
 
-  const hasActiveFilters = filters.format.length > 0 || 
-                         filters.tags.length > 0 || 
+  const hasActiveFilters = filters.tags.length > 0 || 
                          filters.dateRange !== 'all' || 
                          filters.sizeRange !== 'all';
 
@@ -140,40 +146,25 @@ export function SearchBar({
               )}
             </div>
 
-            {/* Format Filter */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Format</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {availableFormats.map((format) => (
-                  <div key={format} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`format-${format}`}
-                      checked={filters.format.includes(format)}
-                      onCheckedChange={() => handleFormatToggle(format)}
-                    />
-                    <Label htmlFor={`format-${format}`} className="text-sm">
-                      {format}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Tags Filter */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Tags</Label>
-              <div className="flex flex-wrap gap-1">
-                {availableTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant={filters.tags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => handleTagToggle(tag)}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+              {isLoadingTags ? (
+                <div className="text-sm text-muted-foreground">Loading tags...</div>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {availableTags.map((tagData) => (
+                    <Badge
+                      key={tagData.tag}
+                      variant={filters.tags.includes(tagData.tag) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => handleTagToggle(tagData.tag)}
+                    >
+                      {tagData.tag} ({tagData.count})
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Date Range Filter */}

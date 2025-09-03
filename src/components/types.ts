@@ -7,7 +7,6 @@ export interface Dataset {
   verifiedDate?: string; // Date when the dataset was verified/approved
   description: string;
   size: string;
-  format: string;
   tags: string[];
   downloadUrl: string;
   files?: FileStructure[]; // File structure for explore feature
@@ -42,7 +41,6 @@ export interface FileStructure {
 }
 
 export interface SearchFilters {
-  format: string[];
   tags: string[];
   dateRange: 'all' | 'week' | 'month' | 'year';
   sizeRange: 'all' | 'small' | 'medium' | 'large';

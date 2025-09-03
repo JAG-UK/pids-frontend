@@ -191,6 +191,42 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// GET /api/datasets/tags - Get top tags by frequency
+router.get('/tags', async (req, res) => {
+  try {
+    console.log('🏷️ GET /api/datasets/tags - Fetching top tags');
+    
+    // Aggregate to get tag frequency
+    const tagStats = await Dataset.aggregate([
+      // Only include approved datasets for public tag stats
+      { $match: { status: 'approved', isPublic: true } },
+      // Unwind the tags array to create a document for each tag
+      { $unwind: '$tags' },
+      // Group by tag and count occurrences
+      { $group: { _id: '$tags', count: { $sum: 1 } } },
+      // Sort by count descending
+      { $sort: { count: -1 } },
+      // Limit to top 20
+      { $limit: 20 },
+      // Project to clean format
+      { $project: { tag: '$_id', count: 1, _id: 0 } }
+    ]);
+    
+    console.log(`🏷️ Found ${tagStats.length} unique tags`);
+    
+    res.json({
+      success: true,
+      data: tagStats
+    });
+  } catch (error) {
+    console.error('❌ Error in GET /api/datasets/tags:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // GET /api/datasets/:id - Get dataset by ID
 router.get('/:id', async (req, res) => {
   try {

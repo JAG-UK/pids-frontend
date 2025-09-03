@@ -80,7 +80,6 @@ export function DatasetCard({
           
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{dataset.size}</span>
-            <Badge variant="outline" className="border-chart-5/30 text-chart-5">{dataset.format}</Badge>
           </div>
           
           <div className="flex flex-wrap gap-1">

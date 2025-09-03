@@ -411,12 +411,21 @@ export function AuthenticatedApp() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+      <header className="border-b bg-card relative overflow-hidden">
+        {/* Subtle background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-5"
+          style={{
+            backgroundImage: `url('/images/Majestic Grey Siberian Cat.jpg')`
+          }}
+        />
+        {/* Content overlay */}
+        <div className="relative z-10">
+          <div className="container mx-auto px-4 py-4">
           {!isAdminMode && (
             <div className="mb-6">
               {/* Hero Header for Public Interface */}
-              <div className="text-center py-8 px-4 rounded-lg mb-6" style={{ backgroundColor: '#f7f5fe' }}>
+              <div className="text-center py-8 px-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(247, 245, 254, 0.3)' }}>
                 <div className="flex items-center justify-center gap-4 mb-4">
                   <div className="bg-chart-1 text-white px-6 py-3 rounded-lg">
                     <span className="text-2xl font-bold tracking-tight">PIDS</span>
@@ -498,6 +507,7 @@ export function AuthenticatedApp() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </header>
 

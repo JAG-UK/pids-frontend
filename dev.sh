@@ -21,6 +21,10 @@ fi
 echo "🛑 Stopping production frontend..."
 docker-compose stop pids-frontend 2>/dev/null || true
 
+# Rebuild latest
+echo "🚧 Building development frontend..."
+docker-compose build --no-cache pids-frontend-dev
+
 # Start the development frontend
 echo "🔧 Starting development frontend..."
 echo "🔧 Setting environment variables:"

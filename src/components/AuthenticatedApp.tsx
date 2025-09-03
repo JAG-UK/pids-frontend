@@ -10,6 +10,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient, isUsingMockData } from '../utils/apiClient';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Mock file structures for explore feature
 const mockFileStructures = {
@@ -184,6 +185,7 @@ export function AuthenticatedApp() {
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Load datasets from API
   useEffect(() => {
@@ -433,9 +435,18 @@ export function AuthenticatedApp() {
           )}
           
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium">
-              {isAdminMode ? 'Admin Dashboard' : viewMode === 'explore' ? 'Dataset Explorer' : 'Dataset Directory'}
-            </h2>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ← Back to Home
+              </Button>
+              <h2 className="text-xl font-medium">
+                {isAdminMode ? 'Admin Dashboard' : viewMode === 'explore' ? 'Dataset Explorer' : 'Dataset Directory'}
+              </h2>
+            </div>
             <div className="flex items-center gap-4">
               {!isAdminMode && viewMode === 'directory' && (
                 <div className="flex items-center gap-6 text-sm text-muted-foreground">

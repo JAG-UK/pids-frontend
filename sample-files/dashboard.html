@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Data Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Climate Data Dashboard</h1>
+            <p>Real-time weather and climate information from NOAA stations</p>
+        </div>
+        
+        <div class="data-grid">
+            <div class="data-card temperature-card">
+                <h3>Current Temperature</h3>
+                <div class="temperature-value">72°F</div>
+                <p>New York Central Park Station</p>
+                <small>Last updated: 2 minutes ago</small>
+            </div>
+            
+            <div class="data-card rainfall-card">
+                <h3>Today's Rainfall</h3>
+                <div class="rainfall-value">0.0mm</div>
+                <p>No precipitation recorded</p>
+                <small>Last updated: 1 hour ago</small>
+            </div>
+            
+            <div class="data-card">
+                <h3>Humidity</h3>
+                <div class="humidity-value">65%</div>
+                <p>Relative humidity</p>
+                <small>Last updated: 5 minutes ago</small>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2 class="chart-title">Temperature Trends</h2>
+            <div id="temperature-chart">
+                <p>Chart will be rendered here using JavaScript</p>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2 class="chart-title">Rainfall Patterns</h2>
+            <div id="rainfall-chart">
+                <p>Chart will be rendered here using JavaScript</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple JavaScript for interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Climate Dashboard loaded successfully');
+            
+            // Add some basic interactivity
+            const cards = document.querySelectorAll('.data-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.classList.toggle('fade-in');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+

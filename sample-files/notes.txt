@@ -1,0 +1,27 @@
+Climate Data Collection Notes
+============================
+
+Data Collection Date: January 15, 2024
+Data Source: NOAA Weather Service
+Collection Method: Automated weather stations
+
+Notes:
+- Temperature data collected every hour
+- Rainfall data collected daily at 6 AM
+- Data quality checks performed weekly
+- Missing data points flagged and documented
+
+Quality Metrics:
+- Temperature accuracy: ±0.5°F
+- Rainfall accuracy: ±0.1mm
+- Data completeness: 98.7%
+
+Next Steps:
+1. Validate February data
+2. Cross-reference with satellite data
+3. Generate quarterly report
+4. Archive raw data files
+
+Contact: data-team@noaa.gov
+
+

@@ -1,0 +1,96 @@
+# Climate Data Collection Configuration
+# Configuration file for NOAA weather station data collection
+
+# Database Configuration
+database:
+  host: localhost
+  port: 27017
+  name: climate_data
+  collections:
+    - temperatures
+    - rainfall
+    - humidity
+    - wind_speed
+
+# Data Collection Settings
+collection:
+  temperature:
+    interval: 3600  # seconds (1 hour)
+    units: fahrenheit
+    precision: 0.1
+    sensors:
+      - central_park
+      - times_square
+      - brooklyn_bridge
+  
+  rainfall:
+    interval: 86400  # seconds (24 hours)
+    units: millimeters
+    precision: 0.01
+    collection_time: "06:00"
+  
+  humidity:
+    interval: 1800  # seconds (30 minutes)
+    units: percentage
+    precision: 1
+    sensors:
+      - central_park
+      - times_square
+
+# Quality Control
+quality_control:
+  temperature_range:
+    min: -50
+    max: 120
+  rainfall_range:
+    min: 0
+    max: 1000
+  humidity_range:
+    min: 0
+    max: 100
+  
+  validation:
+    check_missing_data: true
+    check_outliers: true
+    outlier_threshold: 3.0  # standard deviations
+
+# Export Settings
+export:
+  formats:
+    - csv
+    - json
+    - xml
+  compression: gzip
+  retention_days: 365
+  
+  destinations:
+    - local_storage
+    - cloud_storage
+    - api_endpoint
+
+# API Configuration
+api:
+  endpoint: "https://api.noaa.gov/climate"
+  rate_limit: 1000  # requests per hour
+  timeout: 30  # seconds
+  retry_attempts: 3
+  
+  headers:
+    User-Agent: "ClimateDataCollector/1.0"
+    Accept: "application/json"
+
+# Logging
+logging:
+  level: info
+  file: "climate_collector.log"
+  max_size: "100MB"
+  max_files: 10
+  
+  format: "%{timestamp} [%{level}] %{message}"
+  
+  targets:
+    - console
+    - file
+    - syslog
+
+

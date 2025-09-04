@@ -57,19 +57,21 @@ const getFileUrl = (datasetId: string, file: FileStructure): string => {
   
   // Construct the new URL using dataset ID and file path
   // The path should be the file's path from the manifest, or fallback to name
-  const filePath = file.path || file.name;
+  let filePath = file.path || file.name;
   
-  // Use the API server URL from environment or default to relative path for production
-  let apiBaseUrl = (import.meta as any).env?.VITE_API_URL;
-  console.log('🔧 Environment VITE_API_URL:', apiBaseUrl);
+  // Remove leading slash if present to avoid double slashes
+  if (filePath.startsWith('/')) {
+    filePath = filePath.slice(1);
+  }
   
-  if (apiBaseUrl) {
+  // Check if we're in development mode (localhost:5173) or production
+  const isDevelopment = window.location.hostname === 'localhost' && window.location.port === '5173';
+  console.log('🔧 Environment check:', { hostname: window.location.hostname, port: window.location.port, isDevelopment });
+  
+  if (isDevelopment) {
     // Development mode - use explicit API URL
     console.log('🔧 Development mode - using explicit API URL');
-    if (apiBaseUrl.endsWith('/api')) {
-      apiBaseUrl = apiBaseUrl.slice(0, -4); // Remove '/api' suffix
-    }
-    const finalUrl = `${apiBaseUrl}/api/files/datasets/${datasetId}/${filePath}`;
+    const finalUrl = `http://localhost:3000/api/files/datasets/${datasetId}/${filePath}`;
     console.log('🔧 Constructed URL (dev):', finalUrl);
     return finalUrl;
   } else {

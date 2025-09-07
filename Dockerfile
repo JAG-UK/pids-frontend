@@ -4,7 +4,7 @@ FROM nginx:alpine AS production
 # Copy built application from local dist
 COPY dist /usr/share/nginx/html
 
-# Copy nginx configuration
+# Copy nginx configuration (with API proxy)
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose port 80

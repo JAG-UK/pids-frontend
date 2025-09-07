@@ -46,12 +46,13 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Build and push API image
+    - name: Build and push backend image
       uses: docker/build-push-action@v5
       with:
-        context: ./api
+        context: .
+        file: ./api/Dockerfile.backend
         push: ${{ github.event_name == 'push' }}
-        tags: registry.digitalocean.com/fidl-containers/pids-api:main
+        tags: registry.digitalocean.com/fidl-containers/pids-backend:main
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

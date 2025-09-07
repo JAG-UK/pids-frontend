@@ -21,10 +21,10 @@ services:
   - key: NODE_ENV
     value: production
 
-- name: pids-api
+- name: pids-backend
   image:
     registry_type: DOCR
-    repository: fidl-containers/pids-api
+    repository: fidl-containers/pids-backend
     tag: main
   instance_count: 1
   instance_size_slug: basic-xxs
@@ -42,82 +42,16 @@ services:
   - key: NODE_ENV
     value: production
   - key: MONGODB_URI
-    value: mongodb://mongodb:27017/pids
+    value: mongodb://localhost:27017/pids
   - key: MINIO_ENDPOINT
-    value: minio:9000
+    value: localhost:9000
   - key: MINIO_ACCESS_KEY
     value: minioadmin
   - key: MINIO_SECRET_KEY
     value: minioadmin
   - key: KEYCLOAK_URL
-    value: http://keycloak:8080
+    value: http://localhost:8080
   - key: KEYCLOAK_REALM
     value: pids
   - key: KEYCLOAK_CLIENT_ID
     value: pids-frontend
-
-- name: mongodb
-  image:
-    registry_type: DOCR
-    repository: mongo
-    tag: "7"
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  http_port: 27017
-  envs:
-  - key: MONGO_INITDB_DATABASE
-    value: pids
-
-- name: minio
-  image:
-    registry_type: DOCR
-    repository: minio/minio
-    tag: latest
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  http_port: 9000
-  envs:
-  - key: MINIO_ROOT_USER
-    value: minioadmin
-  - key: MINIO_ROOT_PASSWORD
-    value: minioadmin
-  run_command: server /data --console-address ":9001"
-
-- name: keycloak
-  image:
-    registry_type: DOCR
-    repository: quay.io/keycloak/keycloak
-    tag: latest
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  http_port: 8080
-  envs:
-  - key: KEYCLOAK_ADMIN
-    value: admin
-  - key: KEYCLOAK_ADMIN_PASSWORD
-    value: admin
-  - key: KC_DB
-    value: postgres
-  - key: KC_DB_URL
-    value: jdbc:postgresql://keycloak-db:5432/keycloak
-  - key: KC_DB_USERNAME
-    value: keycloak
-  - key: KC_DB_PASSWORD
-    value: keycloak
-  run_command: start-dev
-
-- name: keycloak-db
-  image:
-    registry_type: DOCR
-    repository: postgres
-    tag: "15"
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  http_port: 5432
-  envs:
-  - key: POSTGRES_DB
-    value: keycloak
-  - key: POSTGRES_USER
-    value: keycloak
-  - key: POSTGRES_PASSWORD
-    value: keycloak

@@ -2,7 +2,7 @@ import express from 'express';
 import Dataset from '../models/Dataset.js';
 import { authenticateToken, requireAdmin, optionalAuth } from '../middleware/auth.js';
 import { parseManifest, validateManifest } from '../utils/manifestParser.js';
-import { uploadFile, getMinIOClient } from '../utils/storage.js';
+import { uploadFile, getStorageClient } from '../utils/storage.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -327,7 +327,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     
     // Delete from MinIO: remove the entire dataset directory and manifest file
     try {
-      const client = getMinIOClient();
+      const client = getStorageClient();
       const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
       
       // Delete manifest file if it exists

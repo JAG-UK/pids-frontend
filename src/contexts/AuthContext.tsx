@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import Keycloak from 'keycloak-js';
 
 interface User {
@@ -30,8 +30,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Debug counters
+  const renderCount = React.useRef(0);
+  const effectCount = React.useRef(0);
+  const isInitializing = React.useRef(false);
+  renderCount.current += 1;
+  console.log(`🔄 AuthProvider render #${renderCount.current}`);
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (isInitializing.current) {
+      console.log('🚫 AuthProvider useEffect already running, skipping...');
+      return;
+    }
+    
+    effectCount.current += 1;
+    console.log(`🚀 AuthProvider useEffect #${effectCount.current}`);
+    isInitializing.current = true;
+    
     const initKeycloak = async () => {
       try {
         console.log('Initializing Keycloak...');
@@ -62,11 +79,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           clientId: config.data.clientId,
         });
 
+        // Define logout function inside useEffect to avoid circular dependency
+        const handleLogout = () => {
+          if (kc) {
+            kc.logout();
+          }
+        };
+
         kc.onTokenExpired = () => {
           console.log('Token expired, refreshing...');
           kc.updateToken(30).catch(() => {
             console.error('Failed to refresh token');
-            logout();
+            handleLogout();
           });
         };
 
@@ -105,16 +129,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         setIsLoading(false);
+        isInitializing.current = false;
       } catch (error) {
         console.error('Failed to initialize Keycloak:', error);
         setIsLoading(false);
+        isInitializing.current = false;
       }
     };
 
     initKeycloak();
   }, []);
 
-  const login = () => {
+  const login = useCallback(() => {
     console.log('Login button clicked');
     console.log('Keycloak state:', { keycloak: !!keycloak, isLoading, isAuthenticated });
     
@@ -126,19 +152,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       console.error('Keycloak not initialized or still loading', { keycloak: !!keycloak, isLoading });
     }
-  };
+  }, [keycloak, isLoading, isAuthenticated]);
+  
+  // Debug: Track when login function is recreated
+  const loginRef = React.useRef(login);
+  if (loginRef.current !== login) {
+    console.log('🔄 Login function recreated!', { keycloak: !!keycloak, isLoading, isAuthenticated });
+    loginRef.current = login;
+  }
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    console.log('Keycloak state:', { keycloak: !!keycloak });
     if (keycloak) {
       keycloak.logout();
     }
-  };
+  }, [keycloak]);
 
-  const hasRole = (role: string): boolean => {
+  const hasRole = useCallback((role: string): boolean => {
     return user?.roles.includes(role) || false;
-  };
+  }, [user]);
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     keycloak,
     user,
     isAuthenticated,
@@ -146,7 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     hasRole,
-  };
+  }), [keycloak, user, isAuthenticated, isLoading, login, logout, hasRole]);
 
   return (
     <AuthContext.Provider value={value}>

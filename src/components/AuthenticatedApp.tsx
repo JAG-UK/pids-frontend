@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { AdminDashboard } from '@components/AdminDashboard';
@@ -182,40 +182,41 @@ export function AuthenticatedApp() {
   const navigate = useNavigate();
 
   // Load datasets from API
-  useEffect(() => {
-    const loadDatasets = async () => {
-      console.log('🔄 AuthenticatedApp: loadDatasets called');
-      console.log('🔍 AuthenticatedApp: Auth state:', { isAuthenticated, isAdminMode, hasToken: !!keycloak?.token });
-      setIsLoading(true);
-      try {
-        // Get token if user is authenticated
-        const token = keycloak?.token;
-        console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none');
-        const result = await apiClient.getDatasets('', { tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
-        console.log('📊 AuthenticatedApp: loadDatasets result:', result);
-        console.log('📊 AuthenticatedApp: Number of datasets in result:', result.datasets?.length || 0);
-        console.log('📊 AuthenticatedApp: Datasets array:', result.datasets);
-        
-        if (result.datasets && Array.isArray(result.datasets)) {
-          console.log('✅ AuthenticatedApp: Setting datasets state with:', result.datasets);
-          setDatasets(result.datasets);
-        } else {
-          console.error('❌ AuthenticatedApp: Invalid datasets format:', result.datasets);
-          setDatasets([]);
-        }
-      } catch (error) {
-        console.error('❌ AuthenticatedApp: Failed to load datasets:', error);
-        // Fallback to mock data if API fails
-        console.log('🔄 AuthenticatedApp: Falling back to mock data');
-        setDatasets(mockDatasets);
-      } finally {
-        console.log('🏁 AuthenticatedApp: loadDatasets completed, setting isLoading to false');
-        setIsLoading(false);
+  const loadDatasets = useCallback(async () => {
+    console.log('🔄 AuthenticatedApp: loadDatasets called');
+    console.log('🔍 AuthenticatedApp: Auth state:', { isAuthenticated, isAdminMode, hasToken: !!keycloak?.token });
+    console.log('🔍 AuthenticatedApp: Token value:', keycloak?.token ? 'present' : 'none');
+    setIsLoading(true);
+    try {
+      // Get token if user is authenticated
+      const token = keycloak?.token;
+      console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none');
+      const result = await apiClient.getDatasets('', { tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
+      console.log('📊 AuthenticatedApp: loadDatasets result:', result);
+      console.log('📊 AuthenticatedApp: Number of datasets in result:', result.datasets?.length || 0);
+      console.log('📊 AuthenticatedApp: Datasets array:', result.datasets);
+      
+      if (result.datasets && Array.isArray(result.datasets)) {
+        console.log('✅ AuthenticatedApp: Setting datasets state with:', result.datasets);
+        setDatasets(result.datasets);
+      } else {
+        console.error('❌ AuthenticatedApp: Invalid datasets format:', result.datasets);
+        setDatasets([]);
       }
-    };
+    } catch (error) {
+      console.error('❌ AuthenticatedApp: Failed to load datasets:', error);
+      // Fallback to mock data if API fails
+      console.log('🔄 AuthenticatedApp: Falling back to mock data');
+      setDatasets(mockDatasets);
+    } finally {
+      console.log('🏁 AuthenticatedApp: loadDatasets completed, setting isLoading to false');
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, isAdminMode]);
 
+  useEffect(() => {
     loadDatasets();
-  }, [isAuthenticated, isAdminMode, keycloak]); // Reload when auth state changes
+  }, [loadDatasets]);
 
   const approvedDatasets = useMemo(() => {
     console.log('🔍 AuthenticatedApp: Filtering approved datasets from:', datasets);

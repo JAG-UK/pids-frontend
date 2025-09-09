@@ -17,7 +17,7 @@ import authRouter from './routes/auth.js';
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
 import { connectDB } from './utils/database.js';
-import { initializeMinIO } from './utils/storage.js';
+import { initializeStorage } from './utils/storage.js';
 
 dotenv.config();
 
@@ -136,9 +136,9 @@ async function startServer() {
     await connectDB();
     console.log('✅ Connected to MongoDB');
 
-    // Initialize MinIO
-    await initializeMinIO();
-    console.log('✅ Connected to MinIO');
+  // Initialize Storage (MinIO for dev, Spaces for prod)
+  await initializeStorage();
+  console.log('✅ Storage initialized');
 
     // Start server
     app.listen(PORT, () => {

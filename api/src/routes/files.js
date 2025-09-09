@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMinIOClient } from '../utils/storage.js';
+import { getStorageClient } from '../utils/storage.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/:filename(*)', async (req, res) => {
   try {
     const { filename } = req.params;
-    const client = getMinIOClient();
+    const client = getStorageClient();
     const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
     
     // Check if file exists
@@ -59,7 +59,7 @@ router.get('/:filename(*)', async (req, res) => {
 router.get('/manifest/:datasetId', async (req, res) => {
   try {
     const { datasetId } = req.params;
-    const client = getMinIOClient();
+    const client = getStorageClient();
     const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
     
     // Import Dataset model
@@ -138,7 +138,7 @@ router.get('/manifest/:datasetId', async (req, res) => {
 router.get('/datasets/:datasetId/:filepath(*)', async (req, res) => {
   try {
     const { datasetId, filepath } = req.params;
-    const client = getMinIOClient();
+    const client = getStorageClient();
     const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
     
     // Construct the full path: datasets/{datasetId}/{filepath}
@@ -239,7 +239,7 @@ router.post('/upload', authenticateToken, requireAdmin, async (req, res) => {
     });
     
     // Get MinIO client
-    const client = getMinIOClient();
+    const client = getStorageClient();
     const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
     
     // Ensure bucket exists

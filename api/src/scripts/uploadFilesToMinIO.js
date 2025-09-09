@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { initializeMinIO, getMinIOClient } from '../utils/storage.js';
+import { initializeStorage, getStorageClient } from '../utils/storage.js';
 import Dataset from '../models/Dataset.js';
 import fs from 'fs';
 import path from 'path';
@@ -45,11 +45,11 @@ const uploadFilesToMinIO = async () => {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pids');
     console.log('✅ Connected to MongoDB');
 
-    // Initialize MinIO
-    await initializeMinIO();
+    // Initialize Storage
+    await initializeStorage();
     console.log('✅ MinIO initialized');
 
-    const client = getMinIOClient();
+    const client = getStorageClient();
     const bucketName = process.env.MINIO_BUCKET || 'pids-datasets';
 
     // Upload all files

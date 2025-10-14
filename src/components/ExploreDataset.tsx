@@ -857,7 +857,19 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
         </Button>
         <div>
           <h2 className="text-xl font-medium">{dataset.name}</h2>
-          <p className="text-sm text-muted-foreground">{dataset.origin}</p>
+          {dataset.projectUrl ? (
+            <a 
+              href={dataset.projectUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-chart-1 hover:text-chart-1/80 underline inline-flex items-center gap-1"
+            >
+              {new URL(dataset.projectUrl).hostname}
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+            </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">{dataset.origin}</p>
+          )}
         </div>
       </div>
 

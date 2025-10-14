@@ -462,7 +462,7 @@ function CodeViewer({ content, language, filename, file, datasetId }: { content:
           <div className="relative">
             <SyntaxHighlighter
               language={detectedLanguage}
-              style={vs}
+              style={coy}
               showLineNumbers={showLineNumbers}
               customStyle={{
                 margin: 0,

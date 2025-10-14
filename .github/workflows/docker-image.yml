@@ -42,7 +42,7 @@ jobs:
       with:
         context: .
         push: ${{ github.event_name == 'push' }}
-        tags: registry.digitalocean.com/fidl-containers/pids-frontend:main
+        tags: registry.digitalocean.com/fidl-containers/pids-app:frontend-main
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -52,7 +52,7 @@ jobs:
         context: .
         file: ./api/Dockerfile.backend
         push: ${{ github.event_name == 'push' }}
-        tags: registry.digitalocean.com/fidl-containers/pids-backend:main
+        tags: registry.digitalocean.com/fidl-containers/pids-app:backend-main
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

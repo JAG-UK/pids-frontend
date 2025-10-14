@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
@@ -566,24 +566,59 @@ function PDFViewer({ file, datasetId }: { file: FileStructure; datasetId: string
 
 // Manifest Viewer Component
 function ManifestViewer({ dataset }: { dataset: any }) {
-  // Get manifest data from the dataset
-  const manifestData = dataset.manifestData || {
-    name: dataset.name,
-    description: dataset.description,
-    tags: dataset.tags,
-    size: dataset.size,
-    projectUrl: dataset.projectUrl,
-    license: dataset.license,
-    version: dataset.version,
-    // Add other manifest fields if available
-    spec: dataset.spec,
-    specVersion: dataset.specVersion,
-    manifestType: dataset.manifestType,
-    openWith: dataset.openWith,
-    uuid: dataset.uuid,
-    nPieces: dataset.nPieces,
-    pieces: dataset.pieces
-  };
+  const [manifestContent, setManifestContent] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchManifest = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Try to fetch the manifest file directly from the API
+        const response = await fetch(`/api/files/manifest/${dataset.id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch manifest: ${response.statusText}`);
+        }
+        
+        const manifestText = await response.text();
+        setManifestContent(manifestText);
+      } catch (err) {
+        console.error('Error fetching manifest:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load manifest');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (dataset.id) {
+      fetchManifest();
+    }
+  }, [dataset.id]);
+
+  if (isLoading) {
+    return (
+      <div className="h-[55vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-chart-1 mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading manifest...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[55vh] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-destructive mb-2">Error loading manifest</p>
+          <p className="text-xs text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[55vh] overflow-auto">
@@ -600,7 +635,7 @@ function ManifestViewer({ dataset }: { dataset: any }) {
             whiteSpace: 'pre'
           }}
         >
-          {JSON.stringify(manifestData, null, 2)}
+          {manifestContent}
         </SyntaxHighlighter>
       </div>
     </div>

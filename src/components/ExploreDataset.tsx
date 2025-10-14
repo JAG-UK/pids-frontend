@@ -5,10 +5,11 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 import { ExploreDatasetProps, FileStructure } from './types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { coy } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
   ArrowLeft, 
   Folder, 
@@ -563,6 +564,49 @@ function PDFViewer({ file, datasetId }: { file: FileStructure; datasetId: string
   );
 }
 
+// Manifest Viewer Component
+function ManifestViewer({ dataset }: { dataset: any }) {
+  // Get manifest data from the dataset
+  const manifestData = dataset.manifestData || {
+    name: dataset.name,
+    description: dataset.description,
+    tags: dataset.tags,
+    size: dataset.size,
+    projectUrl: dataset.projectUrl,
+    license: dataset.license,
+    version: dataset.version,
+    // Add other manifest fields if available
+    spec: dataset.spec,
+    specVersion: dataset.specVersion,
+    manifestType: dataset.manifestType,
+    openWith: dataset.openWith,
+    uuid: dataset.uuid,
+    nPieces: dataset.nPieces,
+    pieces: dataset.pieces
+  };
+
+  return (
+    <div className="h-[55vh] overflow-auto">
+      <div className="p-4 bg-muted rounded" style={{ minWidth: 'max-content' }}>
+        <SyntaxHighlighter
+          language="json"
+          style={coy}
+          customStyle={{
+            margin: 0,
+            borderRadius: 0,
+            fontSize: '0.875rem',
+            lineHeight: '1.5',
+            backgroundColor: 'transparent',
+            whiteSpace: 'pre'
+          }}
+        >
+          {JSON.stringify(manifestData, null, 2)}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+}
+
 export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   const [selectedFile, setSelectedFile] = useState<FileStructure | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -877,23 +921,40 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[70vh]">
         {/* File Tree */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Folder className="h-4 w-4 text-chart-2" />
-              Files & Directories
-            </CardTitle>
-          </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[55vh] px-4">
-              {currentFiles.length > 0 ? (
-                renderFileTree(currentFiles)
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  <File className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">No files available for exploration</p>
+            <Tabs defaultValue="files" className="w-full">
+              <div className="px-4 pt-4 pb-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="files" className="text-xs">View as files</TabsTrigger>
+                  <TabsTrigger value="manifest" className="text-xs">View as manifest</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="files" className="mt-2">
+                <div className="px-4 pb-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Folder className="h-4 w-4 text-chart-2" />
+                    <span className="text-sm font-medium">Files & Directories</span>
+                  </div>
                 </div>
-              )}
-            </ScrollArea>
+                <ScrollArea className="h-[55vh] px-4">
+                  {currentFiles.length > 0 ? (
+                    renderFileTree(currentFiles)
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      <File className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">No files available for exploration</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="manifest" className="mt-2">
+                <div className="px-4">
+                  <ManifestViewer dataset={dataset} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

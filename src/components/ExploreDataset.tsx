@@ -576,14 +576,32 @@ function ManifestViewer({ dataset }: { dataset: any }) {
         setIsLoading(true);
         setError(null);
         
+        // Check if we're in development mode (localhost:5173) or production
+        const isDevelopment = window.location.hostname === 'localhost' && window.location.port === '5173';
+        const apiBaseUrl = isDevelopment ? 'http://localhost:3000/api' : '/api';
+        // Prefer direct file path if available; fallback to dataset-based endpoint
+        const manifestUrl = dataset.manifestFile
+          ? `${apiBaseUrl}/files/${dataset.manifestFile}`
+          : `${apiBaseUrl}/files/manifest/${dataset.id}`;
+        
+        console.log('🔍 Fetching manifest from:', manifestUrl);
+        console.log('🔍 Dataset ID:', dataset.id);
+        console.log('🔍 Dataset manifestFile:', dataset.manifestFile);
+        
         // Try to fetch the manifest file directly from the API
-        const response = await fetch(`/api/files/manifest/${dataset.id}`);
+        const response = await fetch(manifestUrl);
+        
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch manifest: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('🔍 Error response body:', errorText);
+          throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
         }
         
         const manifestText = await response.text();
+        console.log('🔍 Manifest content preview:', manifestText.substring(0, 200));
         setManifestContent(manifestText);
       } catch (err) {
         console.error('Error fetching manifest:', err);

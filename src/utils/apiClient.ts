@@ -467,6 +467,7 @@ const transformDataset = (apiDataset: any): Dataset => {
       tags: apiDataset.tags || [],
       downloadUrl: '#', // Placeholder
       projectUrl: apiDataset.projectUrl, // Project website URL from manifest
+      manifestFile: apiDataset.manifestFile, // Path to manifest file in MinIO
       files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined,
       pieces: apiDataset.pieces || undefined // Include pieces from manifest format
     };

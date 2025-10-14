@@ -64,19 +64,23 @@ export function DatasetCard({
       
       <CardContent className="flex-1 flex flex-col">
         <div className="space-y-3 flex-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Building2 className="h-4 w-4 text-chart-1" />
-            <span>{dataset.origin}</span>
-          </div>
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 text-chart-2" />
-            <span>{formatDate(dataset.uploadDate)}</span>
-          </div>
-          
           <p className="text-sm text-muted-foreground line-clamp-2">
             {dataset.description}
           </p>
+          
+          {dataset.projectUrl && (
+            <div className="flex items-center gap-2 text-sm">
+              <ExternalLink className="h-4 w-4 text-chart-1" />
+              <a 
+                href={dataset.projectUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-chart-1 hover:text-chart-1/80 underline"
+              >
+                Project Website
+              </a>
+            </div>
+          )}
           
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{dataset.size}</span>
@@ -200,18 +204,26 @@ export function DatasetCard({
                     <DialogDescription>{dataset.description}</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    {dataset.projectUrl && (
                       <div>
-                        <label className="text-sm font-medium">Origin</label>
-                        <p className="text-sm text-muted-foreground">{dataset.origin}</p>
+                        <label className="text-sm font-medium">Project Website</label>
+                        <p className="text-sm">
+                          <a 
+                            href={dataset.projectUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-chart-1 hover:text-chart-1/80 underline"
+                          >
+                            {new URL(dataset.projectUrl).hostname}
+                          </a>
+                        </p>
                       </div>
+                    )}
+                    
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium">Upload Date</label>
                         <p className="text-sm text-muted-foreground">{formatDate(dataset.uploadDate)}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Size</label>
-                        <p className="text-sm text-muted-foreground">{dataset.size}</p>
                       </div>
                       {dataset.status === 'approved' && dataset.verifiedDate && (
                         <div>
@@ -219,6 +231,10 @@ export function DatasetCard({
                           <p className="text-sm text-muted-foreground">{formatDate(dataset.verifiedDate)}</p>
                         </div>
                       )}
+                      <div>
+                        <label className="text-sm font-medium">Size</label>
+                        <p className="text-sm text-muted-foreground">{dataset.size}</p>
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium">Tags</label>

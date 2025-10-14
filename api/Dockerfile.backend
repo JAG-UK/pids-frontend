@@ -8,7 +8,6 @@ RUN npm ci --only=production
 
 # Copy API source
 COPY api/src ./src
-COPY api/index.js ./
 
 # Install Docker Compose
 RUN apk add --no-cache docker-compose

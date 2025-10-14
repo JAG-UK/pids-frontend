@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { DatasetCardProps } from './types';
-import { Download, Info, Check, X, Trash2, HardDrive, Calendar, Building2, FolderOpen, ExternalLink } from 'lucide-react';
+import { Download, Info, Check, X, Trash2, HardDrive, FolderOpen, ExternalLink } from 'lucide-react';
 
 export function DatasetCard({ 
   dataset, 

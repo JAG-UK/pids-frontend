@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 import { ExploreDatasetProps, FileStructure } from './types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { coy } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
   ArrowLeft, 
   Folder, 
@@ -563,6 +564,102 @@ function PDFViewer({ file, datasetId }: { file: FileStructure; datasetId: string
   );
 }
 
+// Manifest Viewer Component
+function ManifestViewer({ dataset }: { dataset: any }) {
+  const [manifestContent, setManifestContent] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchManifest = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Check if we're in development mode (localhost:5173) or production
+        const isDevelopment = window.location.hostname === 'localhost' && window.location.port === '5173';
+        const apiBaseUrl = isDevelopment ? 'http://localhost:3000/api' : '/api';
+        // Prefer direct file path if available; fallback to dataset-based endpoint
+        const manifestUrl = dataset.manifestFile
+          ? `${apiBaseUrl}/files/${dataset.manifestFile}`
+          : `${apiBaseUrl}/files/manifest/${dataset.id}`;
+        
+        console.log('🔍 Fetching manifest from:', manifestUrl);
+        console.log('🔍 Dataset ID:', dataset.id);
+        console.log('🔍 Dataset manifestFile:', dataset.manifestFile);
+        
+        // Try to fetch the manifest file directly from the API
+        const response = await fetch(manifestUrl);
+        
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('🔍 Error response body:', errorText);
+          throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
+        }
+        
+        const manifestText = await response.text();
+        console.log('🔍 Manifest content preview:', manifestText.substring(0, 200));
+        setManifestContent(manifestText);
+      } catch (err) {
+        console.error('Error fetching manifest:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load manifest');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (dataset.id) {
+      fetchManifest();
+    }
+  }, [dataset.id]);
+
+  if (isLoading) {
+    return (
+      <div className="h-[55vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-chart-1 mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading manifest...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[55vh] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-destructive mb-2">Error loading manifest</p>
+          <p className="text-xs text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[55vh] overflow-auto">
+      <div className="p-4 bg-muted rounded" style={{ minWidth: 'max-content' }}>
+        <SyntaxHighlighter
+          language="json"
+          style={coy}
+          customStyle={{
+            margin: 0,
+            borderRadius: 0,
+            fontSize: '0.875rem',
+            lineHeight: '1.5',
+            backgroundColor: 'transparent',
+            whiteSpace: 'pre'
+          }}
+        >
+          {manifestContent}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+}
+
 export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
   const [selectedFile, setSelectedFile] = useState<FileStructure | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -857,7 +954,19 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
         </Button>
         <div>
           <h2 className="text-xl font-medium">{dataset.name}</h2>
-          <p className="text-sm text-muted-foreground">{dataset.origin}</p>
+          {dataset.projectUrl ? (
+            <a 
+              href={dataset.projectUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-chart-1 hover:text-chart-1/80 underline inline-flex items-center gap-1"
+            >
+              {new URL(dataset.projectUrl).hostname}
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+            </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">{dataset.origin}</p>
+          )}
         </div>
       </div>
 
@@ -865,23 +974,40 @@ export function ExploreDataset({ dataset, onBack }: ExploreDatasetProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[70vh]">
         {/* File Tree */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Folder className="h-4 w-4 text-chart-2" />
-              Files & Directories
-            </CardTitle>
-          </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[55vh] px-4">
-              {currentFiles.length > 0 ? (
-                renderFileTree(currentFiles)
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  <File className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">No files available for exploration</p>
+            <Tabs defaultValue="files" className="w-full">
+              <div className="px-4 pt-4 pb-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="files" className="text-xs">View as files</TabsTrigger>
+                  <TabsTrigger value="manifest" className="text-xs">View as manifest</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="files" className="mt-2">
+                <div className="px-4 pb-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Folder className="h-4 w-4 text-chart-2" />
+                    <span className="text-sm font-medium">Files & Directories</span>
+                  </div>
                 </div>
-              )}
-            </ScrollArea>
+                <ScrollArea className="h-[55vh] px-4">
+                  {currentFiles.length > 0 ? (
+                    renderFileTree(currentFiles)
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      <File className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">No files available for exploration</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="manifest" className="mt-2">
+                <div className="px-4">
+                  <ManifestViewer dataset={dataset} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

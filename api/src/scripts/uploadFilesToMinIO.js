@@ -4,6 +4,7 @@ import Dataset from '../models/Dataset.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,6 +116,97 @@ const uploadFilesToMinIO = async () => {
       catDataset.fileStructure = updatedFileStructure;
       await catDataset.save();
       console.log('✅ Updated Cat Photography Collection');
+    }
+
+    // Generate and upload manifests for datasets that don't have one yet
+    console.log('\n🧾 Generating manifests for datasets that are missing them...');
+    const allDatasets = await Dataset.find({}).lean(false);
+
+    const clientForManifests = getStorageClient();
+    const bucketForManifests = process.env.MINIO_BUCKET || 'pids-datasets';
+
+    const convertToManifestContents = (files) => {
+      if (!Array.isArray(files)) return [];
+      return files.map((f) => {
+        if (f.type === 'directory') {
+          return {
+            '@type': 'directory',
+            name: f.name,
+            contents: convertToManifestContents(f.children || [])
+          };
+        }
+        // treat anything else as file
+        return {
+          '@type': 'file',
+          name: f.name,
+          byte_length: typeof f.size === 'number' ? f.size : undefined,
+          media_type: inferMediaType(f.name)
+        };
+      });
+    };
+
+    const inferMediaType = (filename) => {
+      const ext = filename.split('.').pop()?.toLowerCase();
+      const map = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        csv: 'text/csv',
+        json: 'application/json',
+        pdf: 'application/pdf',
+        md: 'text/markdown',
+        txt: 'text/plain',
+        html: 'text/html',
+        js: 'text/javascript',
+        ts: 'text/typescript',
+        css: 'text/css'
+      };
+      return map[ext] || 'application/octet-stream';
+    };
+
+    for (const ds of allDatasets) {
+      if (ds.manifestFile) {
+        continue; // already has manifest
+      }
+
+      // Ensure uuid exists (use Mongo _id string as stable id)
+      const uuid = ds._id?.toString() || crypto.randomUUID();
+
+      const manifest = {
+        name: ds.title,
+        description: ds.description,
+        '@spec': 'https://spec.filecoin.io/datamodel/',
+        '@spec_version': '1.0.0',
+        '@type': 'dataset',
+        version: '1.0.0',
+        uuid,
+        tags: ds.tags || [],
+        n_pieces: ds.pieces?.length || 0,
+        contents: convertToManifestContents(ds.fileStructure || [])
+      };
+
+      const objectName = `manifests/${uuid}_manifest.json`;
+      const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2), 'utf8');
+
+      try {
+        await clientForManifests.putObject(
+          bucketForManifests,
+          objectName,
+          manifestBuffer,
+          {
+            'Content-Type': 'application/json',
+            'Content-Length': manifestBuffer.length
+          }
+        );
+
+        ds.manifestFile = objectName;
+        ds.manifestData = manifest;
+        await ds.save();
+        console.log(`✅ Generated and stored manifest for dataset ${ds.title}: ${objectName}`);
+      } catch (e) {
+        console.error(`❌ Failed to write manifest for ${ds.title}:`, e.message);
+      }
     }
 
     // Create new Technical Documentation and Code dataset

@@ -25,10 +25,16 @@ router.get('/:filename(*)', async (req, res) => {
       throw error;
     }
     
-    // Set appropriate headers
+    // Set appropriate headers including CORS
     res.setHeader('Content-Type', stat.metaData?.['content-type'] || 'application/octet-stream');
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    
+    // CORS headers for development
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
     // Get the file data and send it
     try {
@@ -159,10 +165,16 @@ router.get('/datasets/:datasetId/:filepath(*)', async (req, res) => {
       throw error;
     }
     
-    // Set appropriate headers (CORS handled by nginx proxy)
+    // Set appropriate headers including CORS
     res.setHeader('Content-Type', stat.metaData?.['content-type'] || 'application/octet-stream');
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    
+    // CORS headers for development
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
     // Get the file data and send it
     try {

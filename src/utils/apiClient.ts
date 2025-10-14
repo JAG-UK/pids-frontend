@@ -24,6 +24,7 @@ const mockDatasets: Dataset[] = [
     size: "2.0 MB",
     tags: ["climate", "research", "environmental"],
     downloadUrl: "#",
+    projectUrl: "https://climate-research.org",
     files: [
       {
         id: "temp-data",
@@ -78,6 +79,7 @@ const mockDatasets: Dataset[] = [
     size: "1.5 MB",
     tags: ["traffic", "urban", "transportation"],
     downloadUrl: "#",
+    projectUrl: "https://traffic-analysis.gov",
     files: [
       {
         id: "traffic-flow",
@@ -464,6 +466,8 @@ const transformDataset = (apiDataset: any): Dataset => {
       size: formatBytes(apiDataset.size),
       tags: apiDataset.tags || [],
       downloadUrl: '#', // Placeholder
+      projectUrl: apiDataset.projectUrl, // Project website URL from manifest
+      manifestFile: apiDataset.manifestFile, // Path to manifest file in MinIO
       files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined,
       pieces: apiDataset.pieces || undefined // Include pieces from manifest format
     };

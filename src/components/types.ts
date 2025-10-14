@@ -9,6 +9,7 @@ export interface Dataset {
   size: string;
   tags: string[];
   downloadUrl: string;
+  projectUrl?: string; // Project website URL from manifest
   files?: FileStructure[]; // File structure for explore feature
   pieces?: Piece[]; // Pieces from manifest format
 }

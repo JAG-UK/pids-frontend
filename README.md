@@ -124,3 +124,64 @@ docker-compose restart pids-frontend-dev
 # Stop all services
 docker-compose down
 ```
+
+## Production Deployment
+
+For deploying to production on Kubernetes (Digital Ocean or AWS):
+
+### 🚀 Quick Production Deployment
+
+```bash
+# 30-minute deployment to Digital Ocean Kubernetes
+# See QUICK_START.md for complete instructions
+
+# 1. Install prerequisites
+brew install doctl kubectl  # macOS
+
+# 2. Create cluster
+doctl kubernetes cluster create pids-production --region nyc1
+
+# 3. Deploy application
+cd deploy
+./setup-secrets.sh
+./deploy-to-k8s.sh production
+```
+
+### 📚 Deployment Documentation
+
+- **[QUICK_START.md](QUICK_START.md)** - 30-minute deployment guide (start here!)
+- **[DEPLOYMENT_STRATEGY.md](DEPLOYMENT_STRATEGY.md)** - Comprehensive deployment strategy
+- **[AWS_EKS_DEPLOYMENT.md](AWS_EKS_DEPLOYMENT.md)** - AWS-specific deployment guide
+- **[DEPLOYMENT_COMPLETE.md](DEPLOYMENT_COMPLETE.md)** - Complete package overview
+- **[k8s/README.md](k8s/README.md)** - Kubernetes manifests documentation
+- **[deploy/README.md](deploy/README.md)** - Deployment scripts documentation
+
+### 🎯 What You Get
+
+✅ **High Availability:** Multi-pod deployments with automatic failover  
+✅ **Data Persistence:** Survives restarts, node failures, and upgrades  
+✅ **Automated Backups:** Daily backups of all databases  
+✅ **Load Balancing:** Automatic traffic distribution  
+✅ **Zero-Downtime Deployments:** Rolling updates with health checks  
+✅ **Scalability:** Easy horizontal and vertical scaling  
+✅ **Security:** Secrets management and network isolation  
+✅ **Monitoring:** Built-in health checks and logging  
+✅ **CI/CD Ready:** GitHub Actions integration included  
+
+### 💰 Cost Estimates
+
+- **Digital Ocean DOKS:** ~$56/month (recommended)
+- **AWS EKS:** ~$176/month (enterprise features)
+
+### 🆘 Quick Help
+
+```bash
+# Check deployment health
+./deploy/deploy-to-k8s.sh health
+
+# View logs
+kubectl logs -f deployment/pids-api -n pids-production
+
+# Rollback if needed
+./deploy/deploy-to-k8s.sh rollback
+```

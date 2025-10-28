@@ -1,0 +1,82 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: pids-production
+  labels:
+    app: postgres-backup
+spec:
+  # Run daily at 2:30 AM UTC
+  schedule: "30 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: postgres-backup
+            image: postgres:15
+            command:
+            - /bin/sh
+            - -c
+            - |
+              BACKUP_NAME="postgres-backup-$(date +%Y%m%d-%H%M%S)"
+              echo "Starting backup: $BACKUP_NAME"
+              
+              # Create backup directory
+              mkdir -p /backups
+              
+              # Run pg_dump
+              PGPASSWORD=$POSTGRES_PASSWORD pg_dump \
+                -h keycloak-db \
+                -U keycloak \
+                -d keycloak \
+                -F c \
+                -f /backups/$BACKUP_NAME.dump
+              
+              # Compress backup (optional, pg_dump -F c is already compressed)
+              echo "Backup completed: $BACKUP_NAME.dump"
+              
+              # Keep only last 7 days of backups
+              find /backups -name "postgres-backup-*.dump" -mtime +7 -delete
+              
+              # List current backups
+              echo "Current backups:"
+              ls -lh /backups/
+            env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: postgres-backup-pvc
+
+---
+# PVC for backup storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backup-pvc
+  namespace: pids-production
+  labels:
+    app: postgres-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: do-block-storage
+

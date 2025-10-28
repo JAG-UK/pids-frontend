@@ -34,8 +34,11 @@ jobs:
 
     - name: Log in to Digital Ocean Container Registry
       if: github.event_name == 'push'
-      run: |
-          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com --username "jon.geater@fidl.tech" --password-stdin
+      uses: docker/login-action@v3
+      with:
+        registry: registry.digitalocean.com
+        username: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v5
@@ -49,8 +52,8 @@ jobs:
     - name: Build and push backend image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: ./api/Dockerfile.backend
+        context: ./api
+        file: ./api/Dockerfile
         push: ${{ github.event_name == 'push' }}
         tags: registry.digitalocean.com/fidl-containers/pids-app:backend-main
         cache-from: type=gha

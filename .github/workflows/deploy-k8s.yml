@@ -185,8 +185,8 @@ jobs:
         echo "Rollback completed"
         exit 1
 
-    - name: Send notification
-      if: always()
+    - name: Send Slack notification
+      if: always() && secrets.SLACK_WEBHOOK_URL != ''
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
@@ -195,7 +195,11 @@ jobs:
           Commit: ${{ github.sha }}
           Author: ${{ github.actor }}
         webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       continue-on-error: true
+    
+    - name: Send email notification (fallback)
+      if: always() && secrets.SLACK_WEBHOOK_URL == '' && failure()
+      run: |
+        echo "::notice::Deployment ${{ job.status }} - Commit: ${{ github.sha }} by ${{ github.actor }}"
+        echo "⚠️ Slack notifications not configured. Add SLACK_WEBHOOK_URL secret to enable."
 

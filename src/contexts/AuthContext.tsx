@@ -70,7 +70,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Keycloak config received:', config.data);
 
         // Convert internal Docker URL to external URL for browser access
-        const keycloakUrl = config.data.url.replace('http://keycloak:8080', 'http://localhost:8081');
+        let keycloakUrl = config.data.url;
+        
+        // Only rewrite URLs for local development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          console.log('Local development detected, rewriting Keycloak URL...');
+          // For local K8s: port 30081, for docker-compose: port 8081
+          if (keycloakUrl.includes('keycloak:8080')) {
+            keycloakUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:30081');
+          }
+          // Fallback for docker-compose setup
+          if (keycloakUrl.includes('keycloak:8080')) {
+            keycloakUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:8081');
+          }
+        }
+        // In production, use the URL as-is from the API (should already be correct)
         console.log('Using Keycloak URL:', keycloakUrl);
         
         const kc = new Keycloak({
@@ -95,9 +109,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         console.log('Initializing Keycloak client...');
+        
+        // Configure init options based on environment
+        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
         const authenticated = await kc.init({
           onLoad: 'check-sso',
-          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+          // Disable iframe check for local dev to avoid CSP issues
+          // In production, enable it for better SSO experience
+          checkLoginIframe: !isLocalDev,
+          silentCheckSsoRedirectUri: isLocalDev ? undefined : window.location.origin + '/silent-check-sso.html',
           pkceMethod: 'S256',
         });
 
@@ -108,6 +129,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (authenticated) {
           console.log('User is authenticated, getting user info...');
+          console.log('Token present:', !!kc.token);
+          console.log('API URL:', API_BASE_URL);
+          
           // Get user info from API
           try {
             const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
@@ -116,15 +140,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               },
             });
             
+            console.log('User info response status:', userResponse.status);
+            
             if (userResponse.ok) {
               const userData = await userResponse.json();
+              console.log('User info response:', userData);
+              
               if (userData.success) {
-                console.log('User info received:', userData.data.user);
+                console.log('✅ User info received:', userData.data.user);
+                console.log('✅ User roles:', userData.data.user.roles);
                 setUser(userData.data.user);
+              } else {
+                console.error('❌ User info request failed:', userData.error);
               }
+            } else {
+              const errorText = await userResponse.text();
+              console.error('❌ User info request failed with status:', userResponse.status, errorText);
             }
           } catch (error) {
-            console.error('Failed to get user info:', error);
+            console.error('❌ Failed to get user info:', error);
           }
         }
 

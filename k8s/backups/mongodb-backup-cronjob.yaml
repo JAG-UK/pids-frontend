@@ -1,0 +1,75 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: pids-production
+  labels:
+    app: mongodb-backup
+spec:
+  # Run daily at 2 AM UTC
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mongodb-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: mongodb-backup
+            image: mongo:7
+            command:
+            - /bin/sh
+            - -c
+            - |
+              BACKUP_NAME="mongodb-backup-$(date +%Y%m%d-%H%M%S)"
+              echo "Starting backup: $BACKUP_NAME"
+              
+              # Create backup directory
+              mkdir -p /backups
+              
+              # Run mongodump
+              mongodump --host=mongodb:27017 --db=pids --out=/backups/$BACKUP_NAME
+              
+              # Compress backup
+              cd /backups
+              tar -czf $BACKUP_NAME.tar.gz $BACKUP_NAME
+              rm -rf $BACKUP_NAME
+              
+              echo "Backup completed: $BACKUP_NAME.tar.gz"
+              
+              # Keep only last 7 days of backups
+              find /backups -name "mongodb-backup-*.tar.gz" -mtime +7 -delete
+              
+              # List current backups
+              echo "Current backups:"
+              ls -lh /backups/
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: mongodb-backup-pvc
+
+---
+# PVC for backup storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-backup-pvc
+  namespace: pids-production
+  labels:
+    app: mongodb-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: do-block-storage
+

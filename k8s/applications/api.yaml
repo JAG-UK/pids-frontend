@@ -1,0 +1,107 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pids-api
+  namespace: pids-production
+  labels:
+    app: pids-api
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  selector:
+    app: pids-api
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pids-api
+  namespace: pids-production
+  labels:
+    app: pids-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pids-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: pids-api
+    spec:
+      containers:
+      - name: pids-api
+        image: registry.digitalocean.com/fidl-containers/pids-app:backend-main
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: MONGODB_URI
+          value: mongodb://mongodb:27017/pids
+        - name: MINIO_ENDPOINT
+          value: minio
+        - name: MINIO_EXTERNAL_ENDPOINT
+          value: minio  # Changed for internal access
+        - name: MINIO_PORT
+          value: "9000"
+        - name: MINIO_EXTERNAL_PORT
+          value: "9000"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: root-user
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: root-password
+        - name: MINIO_BUCKET
+          value: pids-datasets
+        - name: KEYCLOAK_URL
+          value: http://keycloak:8080
+        - name: KEYCLOAK_REALM
+          value: pids
+        - name: KEYCLOAK_CLIENT_ID
+          value: pids-frontend
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: client-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+

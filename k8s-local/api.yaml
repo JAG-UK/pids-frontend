@@ -1,0 +1,89 @@
+# API service (local)
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pids-api
+  namespace: pids-local
+  labels:
+    app: pids-api
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000
+      name: http
+  selector:
+    app: pids-api
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pids-api
+  namespace: pids-local
+  labels:
+    app: pids-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pids-api
+  template:
+    metadata:
+      labels:
+        app: pids-api
+    spec:
+      containers:
+      - name: pids-api
+        image: pids-app:backend-local
+        imagePullPolicy: Never  # Use local image, don't try to pull
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: development
+        - name: MONGODB_URI
+          value: mongodb://mongodb:27017/pids
+        - name: MINIO_ENDPOINT
+          value: minio
+        - name: MINIO_EXTERNAL_ENDPOINT
+          value: localhost
+        - name: MINIO_PORT
+          value: "9000"
+        - name: MINIO_EXTERNAL_PORT
+          value: "30090"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: root-user
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: root-password
+        - name: MINIO_BUCKET
+          value: pids-datasets
+        - name: KEYCLOAK_URL
+          value: http://keycloak:8080
+        - name: KEYCLOAK_REALM
+          value: pids
+        - name: KEYCLOAK_CLIENT_ID
+          value: pids-frontend
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: client-secret
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+

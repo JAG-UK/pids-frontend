@@ -1,0 +1,18 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+*.log
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Exclude large public files (these should be in MinIO, not Docker image)
+public/
+scripts/
+

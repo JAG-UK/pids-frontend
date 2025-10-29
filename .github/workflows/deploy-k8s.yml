@@ -133,7 +133,7 @@ jobs:
     - name: Update frontend deployment
       run: |
         kubectl set image deployment/frontend \
-          frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:frontend-${{ github.sha }} \
+          frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:frontend-main \
           -n ${{ env.KUBERNETES_NAMESPACE }}
         
         kubectl annotate deployment/frontend \
@@ -143,24 +143,44 @@ jobs:
     - name: Update API deployment
       run: |
         kubectl set image deployment/pids-api \
-          pids-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backend-${{ github.sha }} \
+          pids-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backend-main \
           -n ${{ env.KUBERNETES_NAMESPACE }}
         
         kubectl annotate deployment/pids-api \
           kubernetes.io/change-cause="Deploy ${{ github.sha }} by ${{ github.actor }}" \
           -n ${{ env.KUBERNETES_NAMESPACE }}
 
+    - name: Check deployment image
+      run: |
+        echo "Expected image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:frontend-main"
+        kubectl get deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
+        echo ""
+        
+    - name: Check pod status before rollout
+      run: |
+        echo "Current pods:"
+        kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app=frontend -o wide
+        echo ""
+        echo "Checking for image pull errors..."
+        kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app=frontend -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[0].state}{"\n"}{end}'
+        
     - name: Wait for frontend rollout
       run: |
         kubectl rollout status deployment/frontend \
           -n ${{ env.KUBERNETES_NAMESPACE }} \
-          --timeout=5m
+          --timeout=10m
 
+    - name: Check API deployment image
+      run: |
+        echo "Expected image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backend-main"
+        kubectl get deployment/pids-api -n ${{ env.KUBERNETES_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
+        echo ""
+        
     - name: Wait for API rollout
       run: |
         kubectl rollout status deployment/pids-api \
           -n ${{ env.KUBERNETES_NAMESPACE }} \
-          --timeout=5m
+          --timeout=10m
 
     - name: Verify deployment
       run: |
@@ -175,12 +195,22 @@ jobs:
     - name: Rollback on failure
       if: failure()
       run: |
-        echo "Deployment failed, rolling back..."
-        kubectl rollout undo deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }}
-        kubectl rollout undo deployment/pids-api -n ${{ env.KUBERNETES_NAMESPACE }}
+        echo "Deployment failed, checking pod status..."
+        kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app=frontend
+        kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }} -l app=pids-api
         
-        kubectl rollout status deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
-        kubectl rollout status deployment/pids-api -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=5m
+        echo ""
+        echo "Checking pod events and logs..."
+        kubectl describe pod -n ${{ env.KUBERNETES_NAMESPACE }} -l app=frontend | tail -30
+        kubectl logs -n ${{ env.KUBERNETES_NAMESPACE }} -l app=frontend --tail=50 || true
+        
+        echo ""
+        echo "Rolling back..."
+        kubectl rollout undo deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }} || true
+        kubectl rollout undo deployment/pids-api -n ${{ env.KUBERNETES_NAMESPACE }} || true
+        
+        kubectl rollout status deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m || true
+        kubectl rollout status deployment/pids-api -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=10m || true
         
         echo "Rollback completed"
         exit 1

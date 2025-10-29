@@ -28,7 +28,6 @@ k8s
 k8s-local
 deploy
 sample-files
-public/images
 *.sh
 docker-compose.yml
 Dockerfile.dev

@@ -20,7 +20,7 @@ const LandingPage: React.FC = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/Majestic Grey Siberian Cat.jpg')`
+          backgroundImage: `url('/images/Majestic%20Grey%20Siberian%20Cat.jpg')`
         }}
       />
       

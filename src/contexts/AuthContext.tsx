@@ -72,8 +72,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Convert internal Docker URL to external URL for browser access
         let keycloakUrl = config.data.url;
         
-        // Only rewrite URLs for local development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Check if we're in local development (localhost or 127.0.0.1)
+        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isLocalDev) {
+          // Local development: rewrite to NodePort or docker-compose port
           console.log('Local development detected, rewriting Keycloak URL...');
           // For local K8s: port 30081, for docker-compose: port 8081
           if (keycloakUrl.includes('keycloak:8080')) {
@@ -83,8 +86,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (keycloakUrl.includes('keycloak:8080')) {
             keycloakUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:8081');
           }
+        } else if (keycloakUrl.includes('keycloak:8080')) {
+          // Production: use nginx proxy at /auth/ (relative to current origin)
+          console.log('Production detected, using nginx proxy at /auth');
+          keycloakUrl = `${window.location.origin}/auth`;
         }
-        // In production, use the URL as-is from the API (should already be correct)
+        
         console.log('Using Keycloak URL:', keycloakUrl);
         
         const kc = new Keycloak({
@@ -115,10 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         const authenticated = await kc.init({
           onLoad: 'check-sso',
-          // Disable iframe check for local dev to avoid CSP issues
-          // In production, enable it for better SSO experience
-          checkLoginIframe: !isLocalDev,
-          silentCheckSsoRedirectUri: isLocalDev ? undefined : window.location.origin + '/silent-check-sso.html',
+          // Disable iframe check to avoid CSP/timeout issues
+          // Can be re-enabled later if needed, but redirect-based SSO works fine
+          checkLoginIframe: false,
+          silentCheckSsoRedirectUri: undefined,
           pkceMethod: 'S256',
         });
 

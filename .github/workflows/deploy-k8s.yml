@@ -72,10 +72,8 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
-          type=ref,event=branch,suffix=-frontend
-          type=sha,prefix=frontend-,format=short
           frontend-main
-          frontend-latest
+          type=sha,prefix=frontend-,format=short
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v5
@@ -93,10 +91,8 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
-          type=ref,event=branch,suffix=-backend
-          type=sha,prefix=backend-,format=short
           backend-main
-          backend-latest
+          type=sha,prefix=backend-,format=short
 
     - name: Build and push backend image
       uses: docker/build-push-action@v5

@@ -18,16 +18,11 @@ jobs:
         node-version: '18'
         cache: 'npm'
 
-    - name: Install frontend dependencies
+    - name: Install frontend dependencies (for lint/type-check)
       run: npm ci
 
-    - name: Build frontend
-      run: npm run build
-
-    - name: Install API dependencies
-      run: |
-        cd api
-        npm ci
+    # Frontend build now happens inside Docker (multi-stage)
+    # Keeping dependencies for lint/type-check below
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

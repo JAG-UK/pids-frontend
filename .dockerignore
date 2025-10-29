@@ -16,4 +16,20 @@ coverage
 .idea
 *.swp
 *.swo
-*~ 
+*~
+
+# Exclude files that shouldn't be in Docker image
+dist
+build
+coverage
+*.md
+.github
+k8s
+k8s-local
+deploy
+sample-files
+public/images
+*.sh
+docker-compose.yml
+Dockerfile.dev
+.Dockerfile.backend 

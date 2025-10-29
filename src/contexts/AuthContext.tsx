@@ -117,9 +117,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         console.log('Initializing Keycloak client...');
         
-        // Configure init options based on environment
-        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
         const authenticated = await kc.init({
           onLoad: 'check-sso',
           // Disable iframe check to avoid CSP/timeout issues

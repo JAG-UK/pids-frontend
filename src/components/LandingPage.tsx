@@ -77,7 +77,10 @@ const LandingPage: React.FC = () => {
       
       {/* Decorative Elements */}
       <div className="absolute bottom-8 left-8 text-white/30 text-sm">
-        <p>Build: {new Date().toISOString().slice(0, 19).replace('T', ' ')}</p>
+        <p>Build: {typeof __BUILD_TIME__ !== 'undefined' 
+          ? __BUILD_TIME__.slice(0, 19).replace('T', ' ')
+          : 'Unknown'}
+        </p>
       </div>
       
       <div className="absolute bottom-8 right-8 text-white/30 text-sm">

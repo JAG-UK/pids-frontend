@@ -10,4 +10,8 @@ export default defineConfig({
       "@styles": path.resolve(__dirname, "./src/styles"),
     },
   },
+  define: {
+    // Inject build timestamp at build time (not runtime)
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
 })

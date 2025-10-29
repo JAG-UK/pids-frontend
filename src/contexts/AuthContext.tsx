@@ -117,13 +117,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         console.log('Initializing Keycloak client...');
         
+        // PKCE requires Web Crypto API which only works over HTTPS
+        // Disable PKCE for HTTP (production without SSL)
+        // Enable PKCE for HTTPS or localhost (secure contexts)
+        const isSecureContext = window.location.protocol === 'https:' || 
+                                 window.location.hostname === 'localhost' || 
+                                 window.location.hostname === '127.0.0.1';
+        
         const authenticated = await kc.init({
           onLoad: 'check-sso',
           // Disable iframe check to avoid CSP/timeout issues
           // Can be re-enabled later if needed, but redirect-based SSO works fine
           checkLoginIframe: false,
           silentCheckSsoRedirectUri: undefined,
-          pkceMethod: 'S256',
+          // Only use PKCE if we have a secure context (HTTPS)
+          pkceMethod: isSecureContext ? 'S256' : undefined,
         });
 
         console.log('Keycloak initialized, authenticated:', authenticated);

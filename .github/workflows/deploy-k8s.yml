@@ -126,6 +126,13 @@ jobs:
     - name: Verify kubectl connection
       run: kubectl cluster-info
 
+    - name: Ensure deployments have imagePullSecrets
+      run: |
+        # Apply manifest files to ensure imagePullSecrets are present
+        # This is idempotent and won't change anything if already correct
+        kubectl apply -f k8s/applications/frontend.yaml
+        kubectl apply -f k8s/applications/api.yaml
+
     - name: Update frontend deployment
       run: |
         kubectl set image deployment/frontend \
@@ -145,6 +152,23 @@ jobs:
         kubectl annotate deployment/pids-api \
           kubernetes.io/change-cause="Deploy ${{ github.sha }} by ${{ github.actor }}" \
           -n ${{ env.KUBERNETES_NAMESPACE }}
+        
+    - name: Verify imagePullSecrets are present
+      run: |
+        echo "Verifying imagePullSecrets are configured..."
+        if kubectl get deployment frontend -n ${{ env.KUBERNETES_NAMESPACE }} -o jsonpath='{.spec.template.spec.imagePullSecrets[0].name}' | grep -q registry-secret; then
+          echo "✅ Frontend has imagePullSecrets"
+        else
+          echo "❌ Frontend missing imagePullSecrets!"
+          exit 1
+        fi
+        
+        if kubectl get deployment pids-api -n ${{ env.KUBERNETES_NAMESPACE }} -o jsonpath='{.spec.template.spec.imagePullSecrets[0].name}' | grep -q registry-secret; then
+          echo "✅ API has imagePullSecrets"
+        else
+          echo "❌ API missing imagePullSecrets!"
+          exit 1
+        fi
 
     - name: Check deployment image
       run: |

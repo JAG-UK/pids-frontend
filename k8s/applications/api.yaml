@@ -38,6 +38,8 @@ spec:
       labels:
         app: pids-api
     spec:
+      imagePullSecrets:
+      - name: registry-secret
       containers:
       - name: pids-api
         image: registry.digitalocean.com/fidl-containers/pids-app:backend-main

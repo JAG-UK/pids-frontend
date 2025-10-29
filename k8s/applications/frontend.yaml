@@ -44,6 +44,8 @@ spec:
       labels:
         app: frontend
     spec:
+      imagePullSecrets:
+      - name: registry-secret
       containers:
       - name: frontend
         image: registry.digitalocean.com/fidl-containers/pids-app:frontend-main

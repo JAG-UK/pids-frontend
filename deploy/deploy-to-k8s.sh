@@ -10,6 +10,19 @@ NAMESPACE="${NAMESPACE:-pids-production}"
 ENVIRONMENT="${1:-production}"
 SKIP_CONFIRMATION="${SKIP_CONFIRMATION:-false}"
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change to repository root (parent of deploy/)
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Verify we're in the right directory
+if [ ! -d "k8s" ]; then
+    error "Could not find k8s/ directory. Are you in the repository root?"
+    error "Current directory: $(pwd)"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

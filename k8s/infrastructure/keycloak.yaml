@@ -38,9 +38,6 @@ spec:
         image: quay.io/keycloak/keycloak:latest
         args:
         - start
-        - --optimized
-        - --hostname-strict=false
-        - --proxy=edge
         ports:
         - containerPort: 8080
           name: http
@@ -65,8 +62,26 @@ spec:
               key: password
         - name: KC_HEALTH_ENABLED
           value: "true"
+        - name: QUARKUS_SMALLRYE_HEALTH_ROOT_PATH
+          value: "/health"
         - name: KC_METRICS_ENABLED
           value: "true"
+        - name: KC_PROXY
+          value: edge
+        - name: KC_PROXY_HEADERS
+          value: forwarded
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
+        - name: KC_HTTP_ENABLED
+          value: "true"
+        - name: KC_HTTP_RELATIVE_PATH
+          value: /
+        - name: KC_HTTP_MANAGEMENT_PORT
+          value: "9000"
+        # Disable clustering for simpler deployment
+        # Clustering can cause issues with just 2 replicas if one pod crashes
+        - name: KC_CACHE
+          value: local
         resources:
           requests:
             memory: "512Mi"
@@ -78,16 +93,16 @@ spec:
           httpGet:
             path: /health/live
             port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 5
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health/ready
             port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 5
 

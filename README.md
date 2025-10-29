@@ -1,6 +1,6 @@
 # PIDS Frontend
 
-A modern web application for exploring and analyzing public information datasets.
+A web application for exploring and analyzing public information datasets.
 
 ## Quick Start
 

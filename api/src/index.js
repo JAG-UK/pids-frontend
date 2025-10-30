@@ -62,12 +62,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Rate limiting
+// Rate limiting (apply to API routes only, NOT to /health or root)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
-app.use(limiter);
 
 // Logging
 app.use(morgan('combined'));
@@ -101,9 +100,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api/datasets', datasetsRouter);
-app.use('/api/files', filesRouter);
+// API routes (apply rate limiter to API groups)
+app.use('/api/datasets', limiter, datasetsRouter);
+app.use('/api/files', limiter, filesRouter);
 app.use('/api/auth', authRouter);
 
 // Root endpoint
@@ -142,12 +141,28 @@ async function startServer() {
   await initializeStorage();
   console.log('✅ Storage initialized');
 
-    // Start server
-    app.listen(PORT, () => {
+    // Start server with graceful shutdown support
+    const server = app.listen(PORT, () => {
       console.log(`🚀 PIDS API Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`🔗 API docs: http://localhost:${PORT}/`);
     });
+
+    // Graceful shutdown on SIGTERM/SIGINT
+    const shutdown = (signal) => {
+      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      server.close(() => {
+        console.log('✅ HTTP server closed');
+        process.exit(0);
+      });
+      // Force exit if not closed in time
+      setTimeout(() => {
+        console.warn('⚠️  Force exiting process');
+        process.exit(1);
+      }, 10000).unref();
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

@@ -75,7 +75,7 @@ spec:
         - name: KC_HTTP_ENABLED
           value: "true"
         - name: KC_HTTP_RELATIVE_PATH
-          value: /
+          value: /auth
         - name: KC_HTTP_MANAGEMENT_PORT
           value: "9000"
         # Disable clustering for simpler deployment

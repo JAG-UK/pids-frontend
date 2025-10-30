@@ -1,0 +1,97 @@
+---
+# Frontend Service with HTTPS Support
+# This uses Digital Ocean Load Balancer with TLS termination
+# Requires: Domain name, cert-manager installed, and a TLS certificate
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: pids-production
+  labels:
+    app: frontend
+  annotations:
+    # HTTPS on Load Balancer
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "https"
+    service.beta.kubernetes.io/do-loadbalancer-algorithm: "round_robin"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    # TLS certificate (created by cert-manager)
+    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
+    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "YOUR-DO-CERTIFICATE-ID"
+    # Or use cert-manager secret:
+    # service.beta.kubernetes.io/do-loadbalancer-certificate-id: "" # Leave empty if using cert-manager
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      targetPort: 80
+      protocol: TCP
+      name: https
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: frontend
+
+---
+# Deployment remains the same
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: pids-production
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+      - name: registry-secret
+      containers:
+      - name: frontend
+        image: registry.digitalocean.com/fidl-containers/pids-app:frontend-main
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: NODE_ENV
+          value: production
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+

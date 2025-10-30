@@ -50,6 +50,8 @@ spec:
         env:
         - name: NODE_ENV
           value: production
+        - name: FRONTEND_URL
+          value: https://toads.directory
         - name: MONGODB_URI
           value: mongodb://mongodb:27017/pids
         - name: MINIO_ENDPOINT

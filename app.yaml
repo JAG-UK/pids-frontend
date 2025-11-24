@@ -1,0 +1,122 @@
+name: pids-app
+services:
+- name: pids-frontend
+  image:
+    registry_type: DOCR
+    repository: fidl-containers/pids-app
+    tag: frontend-main
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 80
+  routes:
+  - path: /
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 10
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+  envs:
+  - key: NODE_ENV
+    value: production
+
+- name: pids-backend
+  image:
+    registry_type: DOCR
+    repository: fidl-containers/pids-app
+    tag: backend-main
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 3000
+  routes:
+  - path: /api
+  health_check:
+    http_path: /api/health
+    initial_delay_seconds: 10
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: MONGODB_URI
+    value: ${pids-mongodb.DATABASE_URL}
+  - key: KEYCLOAK_URL
+    value: http://keycloak:8080
+  - key: KEYCLOAK_EXTERNAL_URL
+    value: ${keycloak.PUBLIC_URL}
+  - key: KEYCLOAK_REALM
+    value: pids
+  - key: KEYCLOAK_CLIENT_ID
+    value: pids-frontend
+  - key: KEYCLOAK_ADMIN
+    value: admin
+  - key: KEYCLOAK_ADMIN_PASSWORD
+    value: ${var.KEYCLOAK_ADMIN_PASSWORD}
+  - key: KEYCLOAK_DB_URL
+    value: ${pids-postgres.DATABASE_URL}
+  - key: SPACES_ACCESS_KEY
+    value: ${var.SPACES_ACCESS_KEY}
+  - key: SPACES_SECRET_KEY
+    value: ${var.SPACES_SECRET_KEY}
+  - key: SPACES_REGION
+    value: nyc3
+  - key: SPACES_ENDPOINT
+    value: https://nyc3.digitaloceanspaces.com
+  - key: STORAGE_BUCKET
+    value: pids-datasets
+
+- name: keycloak
+  image:
+    registry_type: DOCR
+    repository: quay.io/keycloak/keycloak
+    tag: latest
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 8080
+  routes:
+  - path: /auth
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 60
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+  envs:
+  - key: KEYCLOAK_ADMIN
+    value: admin
+  - key: KEYCLOAK_ADMIN_PASSWORD
+    value: ${var.KEYCLOAK_ADMIN_PASSWORD}
+  - key: KC_DB
+    value: postgres
+  - key: KC_DB_URL
+    value: ${pids-postgres.DATABASE_URL}
+  - key: KC_DB_USERNAME
+    value: ${pids-postgres.DATABASE_USER}
+  - key: KC_DB_PASSWORD
+    value: ${pids-postgres.DATABASE_PASSWORD}
+  - key: KC_HOSTNAME_STRICT
+    value: "false"
+  - key: KC_HOSTNAME_STRICT_HTTPS
+    value: "false"
+  - key: KC_HTTP_ENABLED
+    value: "true"
+  - key: KC_HEALTH_ENABLED
+    value: "true"
+  run_command: start-dev
+
+databases:
+- name: pids-mongodb
+  engine: MONGODB
+  version: "7"
+  size: db-s-dev-database
+  num_nodes: 1
+
+- name: pids-postgres
+  engine: PG
+  version: "15"
+  size: db-s-dev-database
+  num_nodes: 1

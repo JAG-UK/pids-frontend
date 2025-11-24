@@ -1,0 +1,336 @@
+#!/usr/bin/env node
+
+/**
+ * Keycloak Initialization Script
+ * 
+ * This script initializes Keycloak with the required realm and client configuration.
+ * It can be run as a standalone script or called from the API server on startup.
+ * 
+ * Usage:
+ *   node src/scripts/initKeycloak.js
+ * 
+ * Environment Variables:
+ *   KEYCLOAK_URL - Internal Keycloak URL (e.g., http://keycloak:8080)
+ *   KEYCLOAK_ADMIN - Admin username (default: admin)
+ *   KEYCLOAK_ADMIN_PASSWORD - Admin password
+ *   KEYCLOAK_REALM - Realm name (default: pids)
+ *   KEYCLOAK_CLIENT_ID - Client ID (default: pids-frontend)
+ *   KEYCLOAK_EXTERNAL_URL - External URL for redirects (optional, auto-detected)
+ */
+
+// Use built-in fetch (Node 18+)
+// Note: If using Node < 18, you'll need to install node-fetch and import it
+
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const KEYCLOAK_ADMIN = process.env.KEYCLOAK_ADMIN || 'admin';
+const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin';
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'pids';
+const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'pids-frontend';
+const KEYCLOAK_EXTERNAL_URL = process.env.KEYCLOAK_EXTERNAL_URL || KEYCLOAK_URL;
+
+// Helper function to wait
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Wait for Keycloak to be ready
+async function waitForKeycloak(maxRetries = 30, delay = 5000) {
+  console.log(`⏳ Waiting for Keycloak to be ready at ${KEYCLOAK_URL}...`);
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(`${KEYCLOAK_URL}/health`, {
+        method: 'GET',
+        timeout: 5000
+      });
+      
+      if (response.ok) {
+        console.log('✅ Keycloak is ready!');
+        return true;
+      }
+    } catch (error) {
+      // Ignore errors, keep retrying
+    }
+    
+    if (i < maxRetries - 1) {
+      console.log(`   Attempt ${i + 1}/${maxRetries}... waiting ${delay/1000}s`);
+      await sleep(delay);
+    }
+  }
+  
+  throw new Error(`Keycloak did not become ready after ${maxRetries} attempts`);
+}
+
+// Get admin token
+async function getAdminToken() {
+  console.log('🔑 Getting admin token...');
+  
+  const tokenUrl = `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`;
+  const params = new URLSearchParams({
+    username: KEYCLOAK_ADMIN,
+    password: KEYCLOAK_ADMIN_PASSWORD,
+    grant_type: 'password',
+    client_id: 'admin-cli'
+  });
+  
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to get admin token: ${response.status} ${text}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.access_token) {
+      throw new Error('No access token in response');
+    }
+    
+    console.log('✅ Admin token obtained');
+    return data.access_token;
+  } catch (error) {
+    throw new Error(`Failed to get admin token: ${error.message}`);
+  }
+}
+
+// Check if realm exists
+async function realmExists(adminToken) {
+  try {
+    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+    
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Create realm
+async function createRealm(adminToken) {
+  console.log(`🏰 Creating '${KEYCLOAK_REALM}' realm...`);
+  
+  const realmData = {
+    realm: KEYCLOAK_REALM,
+    enabled: true,
+    displayName: 'PIDS Dataset Explorer',
+    displayNameHtml: '<div class="kc-logo-text"><span>PIDS</span></div>'
+  };
+  
+  try {
+    const response = await fetch(`${KEYCLOAK_URL}/admin/realms`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(realmData)
+    });
+    
+    if (response.ok || response.status === 409) {
+      // 409 means realm already exists, which is fine
+      console.log(`✅ Realm '${KEYCLOAK_REALM}' exists`);
+      return true;
+    }
+    
+    const text = await response.text();
+    throw new Error(`Failed to create realm: ${response.status} ${text}`);
+  } catch (error) {
+    throw new Error(`Failed to create realm: ${error.message}`);
+  }
+}
+
+// Check if client exists
+async function clientExists(adminToken) {
+  try {
+    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+    
+    if (!response.ok) {
+      return false;
+    }
+    
+    const clients = await response.json();
+    return clients.length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Create client
+async function createClient(adminToken) {
+  console.log(`🔧 Creating '${KEYCLOAK_CLIENT_ID}' client...`);
+  
+  // Determine redirect URIs based on environment
+  const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
+    ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
+    : [
+        'http://localhost:8080/*',
+        'http://localhost:5173/*',
+        'http://localhost:3000/*',
+        `${KEYCLOAK_EXTERNAL_URL.replace(/\/$/, '')}/*`
+      ];
+  
+  const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
+    ? process.env.KEYCLOAK_WEB_ORIGINS.split(',')
+    : [
+        'http://localhost:8080',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        KEYCLOAK_EXTERNAL_URL.replace(/\/$/, '')
+      ];
+  
+  const clientData = {
+    clientId: KEYCLOAK_CLIENT_ID,
+    enabled: true,
+    publicClient: true,
+    standardFlowEnabled: true,
+    directAccessGrantsEnabled: true,
+    redirectUris: redirectUris,
+    webOrigins: webOrigins,
+    attributes: {
+      'saml.assertion.signature': 'false',
+      'saml.force.post.binding': 'false',
+      'saml.multivalued.roles': 'false',
+      'saml.encrypt': 'false',
+      'saml.server.signature': 'false',
+      'saml.server.signature.keyinfo.ext': 'false',
+      'exclude.session.state.from.auth.response': 'false',
+      'saml_force_name_id_format': 'false',
+      'saml.client.signature': 'false',
+      'tls.client.certificate.bound.access.tokens': 'false',
+      'saml.authnstatement': 'false',
+      'display.on.consent.screen': 'false',
+      'saml.onetimeuse.condition': 'false'
+    }
+  };
+  
+  try {
+    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(clientData)
+    });
+    
+    if (response.ok || response.status === 409) {
+      console.log(`✅ Client '${KEYCLOAK_CLIENT_ID}' exists`);
+      return true;
+    }
+    
+    const text = await response.text();
+    throw new Error(`Failed to create client: ${response.status} ${text}`);
+  } catch (error) {
+    throw new Error(`Failed to create client: ${error.message}`);
+  }
+}
+
+// Create roles
+async function createRoles(adminToken) {
+  console.log('👥 Creating roles...');
+  
+  const roles = [
+    { name: 'admin', description: 'Administrator role' },
+    { name: 'user', description: 'Regular user role' }
+  ];
+  
+  for (const role of roles) {
+    try {
+      const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(role)
+      });
+      
+      if (response.ok || response.status === 409) {
+        console.log(`   ✅ Role '${role.name}' exists`);
+      } else {
+        const text = await response.text();
+        console.warn(`   ⚠️  Failed to create role '${role.name}': ${response.status} ${text}`);
+      }
+    } catch (error) {
+      console.warn(`   ⚠️  Failed to create role '${role.name}': ${error.message}`);
+    }
+  }
+}
+
+// Main initialization function
+async function initializeKeycloak() {
+  try {
+    console.log('🔐 Initializing Keycloak...');
+    console.log(`   Keycloak URL: ${KEYCLOAK_URL}`);
+    console.log(`   Realm: ${KEYCLOAK_REALM}`);
+    console.log(`   Client ID: ${KEYCLOAK_CLIENT_ID}`);
+    
+    // Wait for Keycloak to be ready
+    await waitForKeycloak();
+    
+    // Get admin token
+    const adminToken = await getAdminToken();
+    
+    // Check if realm exists, create if not
+    const realmAlreadyExists = await realmExists(adminToken);
+    if (!realmAlreadyExists) {
+      await createRealm(adminToken);
+      // Wait a bit for realm to be fully created
+      await sleep(2000);
+    }
+    
+    // Check if client exists, create if not
+    const clientAlreadyExists = await clientExists(adminToken);
+    if (!clientAlreadyExists) {
+      await createClient(adminToken);
+    }
+    
+    // Create roles
+    await createRoles(adminToken);
+    
+    console.log('');
+    console.log('🎉 Keycloak initialization complete!');
+    console.log('');
+    console.log('📋 Summary:');
+    console.log(`   Realm: ${KEYCLOAK_REALM}`);
+    console.log(`   Client: ${KEYCLOAK_CLIENT_ID}`);
+    console.log(`   Keycloak URL: ${KEYCLOAK_URL}`);
+    console.log(`   External URL: ${KEYCLOAK_EXTERNAL_URL}`);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Keycloak initialization failed:', error.message);
+    throw error;
+  }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('initKeycloak.js')) {
+  initializeKeycloak()
+    .then(() => {
+      console.log('✅ Initialization complete');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Initialization failed:', error);
+      process.exit(1);
+    });
+}
+
+// Export for use in other modules
+export default initializeKeycloak;
+

@@ -69,29 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         console.log('Keycloak config received:', config.data);
 
-        // Convert internal Docker URL to external URL for browser access
-        let keycloakUrl = config.data.url;
-        
-        // Check if we're in local development (localhost or 127.0.0.1)
-        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
-        if (isLocalDev) {
-          // Local development: rewrite to NodePort or docker-compose port
-          console.log('Local development detected, rewriting Keycloak URL...');
-          // For local K8s: port 30081, for docker-compose: port 8081
-          if (keycloakUrl.includes('keycloak:8080')) {
-            keycloakUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:30081');
-          }
-          // Fallback for docker-compose setup
-          if (keycloakUrl.includes('keycloak:8080')) {
-            keycloakUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:8081');
-          }
-        } else if (keycloakUrl.includes('keycloak:8080')) {
-          // Production: use nginx proxy at /auth/ (relative to current origin)
-          console.log('Production detected, using nginx proxy at /auth');
-          keycloakUrl = `${window.location.origin}/auth`;
-        }
-        
+        // Use the URL provided by the API (already converted for browser access)
+        const keycloakUrl = config.data.url;
         console.log('Using Keycloak URL:', keycloakUrl);
         
         const kc = new Keycloak({

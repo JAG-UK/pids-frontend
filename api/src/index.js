@@ -137,9 +137,24 @@ async function startServer() {
     await connectDB();
     console.log('✅ Connected to MongoDB');
 
-  // Initialize Storage (MinIO for dev, Spaces for prod)
-  await initializeStorage();
-  console.log('✅ Storage initialized');
+    // Initialize Storage (MinIO for dev, Spaces for prod)
+    await initializeStorage();
+    console.log('✅ Storage initialized');
+
+    // Initialize Keycloak (non-blocking - runs in background)
+    // Only run if KEYCLOAK_URL is set and we're in production
+    if (process.env.KEYCLOAK_URL && process.env.NODE_ENV === 'production') {
+      try {
+        const initializeKeycloak = (await import('./scripts/initKeycloak.js')).default;
+        // Run initialization in background, don't block server startup
+        initializeKeycloak().catch((error) => {
+          console.warn('⚠️  Keycloak initialization failed (non-critical):', error.message);
+          console.warn('   You may need to manually configure Keycloak or run the init script');
+        });
+      } catch (error) {
+        console.warn('⚠️  Could not load Keycloak initialization script:', error.message);
+      }
+    }
 
     // Start server with graceful shutdown support
     const server = app.listen(PORT, () => {

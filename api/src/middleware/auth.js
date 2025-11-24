@@ -7,11 +7,17 @@ const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'pids';
 const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'pids-frontend';
 
 // Convert internal Docker URL to external URL for issuer
+// In production, use KEYCLOAK_EXTERNAL_URL if provided
 const getExternalKeycloakUrl = () => {
-  // For local K8s (NodePort 30081) or docker-compose (port 8081)
-  // Try to detect based on environment or allow both
-  const url = KEYCLOAK_URL.replace('http://keycloak:8080', 'http://localhost:30081');
-  return url;
+  const externalUrl = process.env.KEYCLOAK_EXTERNAL_URL || KEYCLOAK_URL;
+  
+  // For local development, convert internal Docker URL
+  if (process.env.NODE_ENV !== 'production' && externalUrl.includes('keycloak:8080')) {
+    // For local K8s (NodePort 30081) or docker-compose (port 8081)
+    return externalUrl.replace('http://keycloak:8080', 'http://localhost:8081');
+  }
+  
+  return externalUrl;
 };
 
 // Create JWKS client (use internal URL for fetching keys)

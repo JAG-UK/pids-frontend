@@ -36,8 +36,18 @@ router.get('/me', optionalAuth, async (req, res) => {
 // GET /api/auth/keycloak-config - Get Keycloak configuration for frontend
 router.get('/keycloak-config', async (req, res) => {
   try {
+    // Use external URL if provided, otherwise use internal URL
+    // In production, KEYCLOAK_EXTERNAL_URL should be set to the public-facing URL
+    const keycloakUrl = process.env.KEYCLOAK_EXTERNAL_URL || process.env.KEYCLOAK_URL || 'http://localhost:8080';
+    
+    // For local development, convert internal Docker URL to external
+    let externalUrl = keycloakUrl;
+    if (process.env.NODE_ENV !== 'production' && keycloakUrl.includes('keycloak:8080')) {
+      externalUrl = keycloakUrl.replace('http://keycloak:8080', 'http://localhost:8081');
+    }
+    
     const config = {
-      url: process.env.KEYCLOAK_URL || 'http://localhost:8080',
+      url: externalUrl,
       realm: process.env.KEYCLOAK_REALM || 'pids',
       clientId: process.env.KEYCLOAK_CLIENT_ID || 'pids-frontend'
     };

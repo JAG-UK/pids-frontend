@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "PIDS Data Explorer",
+    "name": "TOADS Dataset Directory",
     "version": "1.0.0",
-    "description": "A modern web application for exploring and analyzing public information datasets"
+    "description": "Directory of Open Access Datasets stored on the Filecoin network"
   },
   "server": {
     "port": 3000,

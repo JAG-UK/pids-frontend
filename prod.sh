@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Production script for PIDS Frontend
+# Production script for Frontend
 # This script starts the production version of the frontend with all services
 
-echo "🚀 Starting PIDS Frontend in PRODUCTION mode..."
+echo "🚀 Starting TOADS Dataset Directory Frontend in PRODUCTION mode..."
 echo "📝 This will enable:"
 echo "   - Optimized production build"
 echo "   - Better performance"

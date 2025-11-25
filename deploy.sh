@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# PIDS Frontend Deployment Script
-# This script handles building, testing, and deploying the PIDS application
+# Frontend Deployment Script
 
 set -e  # Exit on any error
 
@@ -145,7 +144,7 @@ rollback() {
 
 # Main deployment function
 main() {
-    log "Starting PIDS frontend deployment..."
+    log "Starting TOADS Dataset Directory frontend deployment..."
     
     # Check dependencies
     check_dependencies

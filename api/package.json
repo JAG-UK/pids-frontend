@@ -1,7 +1,7 @@
 {
   "name": "pids-api",
   "version": "1.0.0",
-  "description": "PIDS API Server",
+  "description": "TOADS Directory API Server",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -39,6 +39,6 @@
     "mongodb",
     "minio"
   ],
-  "author": "PIDS Team",
+  "author": "Filecoin Incentive Design Labs",
   "license": "MIT"
 }

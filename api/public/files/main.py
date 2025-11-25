@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Main application entry point for the PIDS Data Explorer.
+Main application entry point for the TOADS Dataset Directory backend.
 
-This module provides the core functionality for exploring and analyzing
-datasets in the PIDS (Public Information Data System) platform.
+This module provides the core functionality for finding and indexing
+datasets in TOADS (The Open Access Dataset Standard) directory.
 """
 
 import json

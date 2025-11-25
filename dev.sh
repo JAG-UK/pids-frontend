@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Development script for PIDS Frontend
+# Development script for Frontend
 # This script starts the development version of the frontend with hot reloading and all services
 
-echo "🚀 Starting PIDS Frontend in DEVELOPMENT mode..."
+echo "🚀 Starting TOADS Dataset Directory Frontend in DEVELOPMENT mode..."
 echo "📝 This will enable:"
 echo "   - Hot reloading"
 echo "   - Source maps for debugging"

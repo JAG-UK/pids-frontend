@@ -58,9 +58,12 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
       if (response.ok) {
         console.log('✅ Keycloak is ready!');
         return true;
+      } else {
+        const errorText = await response.text().catch(() => 'Unable to read error');
+        console.log(`   Token request failed: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}`);
       }
     } catch (error) {
-      // Ignore errors, keep retrying
+      console.log(`   Token request error: ${error.message}`);
     }
     
     if (i < maxRetries - 1) {

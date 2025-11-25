@@ -423,14 +423,14 @@ export function AuthenticatedApp() {
               <div className="text-center py-8 px-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(247, 245, 254, 0.3)' }}>
                 <div className="flex items-center justify-center gap-4 mb-4">
                   <div className="bg-chart-1 text-white px-6 py-3 rounded-lg">
-                    <span className="text-2xl font-bold tracking-tight">PIDS</span>
+                    <span className="text-2xl font-bold tracking-tight">TOADS</span>
                   </div>
                   <div className="text-left">
                     <h1 className="text-3xl font-bold text-foreground">
-                      Public Interest Dataset Service
+                      The Open Access Dataset Service
                     </h1>
                     <p className="text-lg text-muted-foreground mt-1">
-                      Discover, explore, and access verified public datasets from trusted sources
+                      Discover public datasets stored on the Filecoin network
                     </p>
                   </div>
                 </div>

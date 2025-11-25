@@ -174,13 +174,18 @@ async function createClient(adminToken) {
   console.log(`🔧 Creating '${KEYCLOAK_CLIENT_ID}' client...`);
   
   // Determine redirect URIs based on environment
+  // Redirect URIs should point to the FRONTEND, not Keycloak
+  // In production, use the frontend URL (without /auth)
+  const frontendUrl = process.env.FRONTEND_URL || 
+    (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
+  
   const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
     ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
     : [
         'http://localhost:8080/*',
         'http://localhost:5173/*',
         'http://localhost:3000/*',
-        `${KEYCLOAK_EXTERNAL_URL.replace(/\/$/, '')}/*`
+        `${frontendUrl}/*`
       ];
   
   const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
@@ -189,7 +194,7 @@ async function createClient(adminToken) {
         'http://localhost:8080',
         'http://localhost:5173',
         'http://localhost:3000',
-        KEYCLOAK_EXTERNAL_URL.replace(/\/$/, '')
+        frontendUrl
       ];
   
   const clientData = {
@@ -293,10 +298,91 @@ async function initializeKeycloak() {
       await sleep(2000);
     }
     
-    // Check if client exists, create if not
+    // Check if client exists, create or update it
     const clientAlreadyExists = await clientExists(adminToken);
     if (!clientAlreadyExists) {
       await createClient(adminToken);
+    } else {
+      // Update existing client to ensure redirect URIs are correct
+      console.log(`🔄 Updating existing client '${KEYCLOAK_CLIENT_ID}'...`);
+      try {
+        // Get client ID (UUID)
+        const clientsResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+        
+        if (clientsResponse.ok) {
+          const clients = await clientsResponse.json();
+          if (clients.length > 0) {
+            const clientId = clients[0].id;
+            
+            // Get the full client configuration first
+            const getClientResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${adminToken}`
+              }
+            });
+            
+            if (getClientResponse.ok) {
+              const existingClient = await getClientResponse.json();
+              
+              // Get frontend URL for redirect URIs
+              const frontendUrl = process.env.FRONTEND_URL || 
+                (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
+              
+              const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
+                ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
+                : [
+                    'http://localhost:8080/*',
+                    'http://localhost:5173/*',
+                    'http://localhost:3000/*',
+                    `${frontendUrl}/*`
+                  ];
+              
+              const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
+                ? process.env.KEYCLOAK_WEB_ORIGINS.split(',')
+                : [
+                    'http://localhost:8080',
+                    'http://localhost:5173',
+                    'http://localhost:3000',
+                    frontendUrl
+                  ];
+              
+              // Update only the redirect URIs and web origins, keep everything else
+              const updatedClient = {
+                ...existingClient,
+                redirectUris: redirectUris,
+                webOrigins: webOrigins
+              };
+              
+              // Update client with full configuration
+              const updateResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${adminToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedClient)
+              });
+              
+              if (updateResponse.ok) {
+                console.log(`✅ Client redirect URIs updated: ${redirectUris.join(', ')}`);
+              } else {
+                const text = await updateResponse.text();
+                console.warn('⚠️  Could not update client redirect URIs:', text);
+              }
+            } else {
+              console.warn('⚠️  Could not fetch existing client configuration');
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️  Failed to update client redirect URIs:', error.message);
+      }
     }
     
     // Create roles

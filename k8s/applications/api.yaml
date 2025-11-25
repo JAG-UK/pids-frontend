@@ -52,6 +52,8 @@ spec:
           value: production
         - name: FRONTEND_URL
           value: https://toads.directory
+        - name: KEYCLOAK_EXTERNAL_URL
+          value: https://toads.directory/auth
         - name: MONGODB_URI
           value: mongodb://mongodb:27017/pids
         - name: MINIO_ENDPOINT
@@ -76,6 +78,8 @@ spec:
           value: pids-datasets
         - name: KEYCLOAK_URL
           value: http://keycloak:8080
+        - name: KEYCLOAK_EXTERNAL_URL
+          value: https://toads.directory/auth
         - name: KEYCLOAK_REALM
           value: pids
         - name: KEYCLOAK_CLIENT_ID

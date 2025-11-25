@@ -19,15 +19,22 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Keycloak proxy configuration
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # Keycloak proxy configuration
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
   tls:
   - hosts:
-    - your-domain.com  # CHANGE THIS
+    - toads.directory
     secretName: pids-tls-cert
   rules:
-  - host: your-domain.com  # CHANGE THIS
+  - host: toads.directory
     http:
       paths:
+      # Frontend at root (Keycloak will be on separate ingress)
       - path: /
         pathType: Prefix
         backend:
@@ -66,7 +73,7 @@ spec:
               number: 9001
 
 ---
-# Optional: Ingress for Keycloak admin console
+# Keycloak Ingress - serves at /auth path on main domain
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -76,17 +83,27 @@ metadata:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # Rewrite /auth to / before forwarding to Keycloak
+    # Keycloak has KC_HTTP_RELATIVE_PATH=/auth, so it serves at /auth internally
+    # We strip /auth and forward to /, then Keycloak serves it at /auth
+    # KC_HOSTNAME_PATH tells Keycloak to generate URLs with /auth prefix
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Ensure proxy headers are passed so Keycloak knows it's behind a proxy
+    nginx.ingress.kubernetes.io/proxy-set-headers: "kube-system/ingress-nginx-headers"
 spec:
   tls:
   - hosts:
-    - auth.your-domain.com  # CHANGE THIS
-    secretName: keycloak-tls-cert
+    - toads.directory
+    secretName: pids-tls-cert
   rules:
-  - host: auth.your-domain.com  # CHANGE THIS
+  - host: toads.directory
     http:
       paths:
-      - path: /
-        pathType: Prefix
+      - path: /auth(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: keycloak

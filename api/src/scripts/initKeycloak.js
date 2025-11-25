@@ -32,14 +32,27 @@ const KEYCLOAK_EXTERNAL_URL = process.env.KEYCLOAK_EXTERNAL_URL || KEYCLOAK_URL;
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Wait for Keycloak to be ready
+// Instead of checking health endpoint, try to get an admin token - more reliable
 async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log(`⏳ Waiting for Keycloak to be ready at ${KEYCLOAK_URL}...`);
   
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch(`${KEYCLOAK_URL}/health`, {
-        method: 'GET',
-        timeout: 5000
+      // Try to get admin token - if this works, Keycloak is ready
+      const tokenUrl = `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`;
+      const params = new URLSearchParams({
+        username: KEYCLOAK_ADMIN,
+        password: KEYCLOAK_ADMIN_PASSWORD,
+        grant_type: 'password',
+        client_id: 'admin-cli'
+      });
+      
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
       });
       
       if (response.ok) {
@@ -179,14 +192,23 @@ async function createClient(adminToken) {
   const frontendUrl = process.env.FRONTEND_URL || 
     (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
   
+  // Keycloak requires explicit paths - wildcard doesn't always match root
+  // So we need both the root path and the wildcard pattern
   const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
     ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
     : [
+        'http://localhost:8080',
         'http://localhost:8080/*',
+        'http://localhost:5173',
         'http://localhost:5173/*',
+        'http://localhost:3000',
         'http://localhost:3000/*',
-        `${frontendUrl}/*`
+        frontendUrl,  // Root path (exact match)
+        `${frontendUrl}/*`  // Wildcard pattern
       ];
+  
+  console.log(`   Frontend URL: ${frontendUrl}`);
+  console.log(`   Redirect URIs: ${redirectUris.join(', ')}`);
   
   const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
     ? process.env.KEYCLOAK_WEB_ORIGINS.split(',')
@@ -280,7 +302,9 @@ async function createRoles(adminToken) {
 async function initializeKeycloak() {
   try {
     console.log('🔐 Initializing Keycloak...');
-    console.log(`   Keycloak URL: ${KEYCLOAK_URL}`);
+    console.log(`   Keycloak Internal URL (for admin API): ${KEYCLOAK_URL}`);
+    console.log(`   Keycloak External URL (for redirect URIs): ${KEYCLOAK_EXTERNAL_URL}`);
+    console.log(`   Frontend URL: ${process.env.FRONTEND_URL || 'not set'}`);
     console.log(`   Realm: ${KEYCLOAK_REALM}`);
     console.log(`   Client ID: ${KEYCLOAK_CLIENT_ID}`);
     
@@ -334,14 +358,24 @@ async function initializeKeycloak() {
               const frontendUrl = process.env.FRONTEND_URL || 
                 (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
               
+              console.log(`   Using frontend URL for redirect URIs: ${frontendUrl}`);
+              
+              // Keycloak requires explicit paths - wildcard doesn't always match root
+              // So we need both the root path and the wildcard pattern
               const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
                 ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
                 : [
+                    'http://localhost:8080',
                     'http://localhost:8080/*',
+                    'http://localhost:5173',
                     'http://localhost:5173/*',
+                    'http://localhost:3000',
                     'http://localhost:3000/*',
-                    `${frontendUrl}/*`
+                    frontendUrl,  // Root path (exact match)
+                    `${frontendUrl}/*`  // Wildcard pattern
                   ];
+              
+              console.log(`   Setting redirect URIs: ${redirectUris.join(', ')}`);
               
               const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
                 ? process.env.KEYCLOAK_WEB_ORIGINS.split(',')
@@ -370,10 +404,25 @@ async function initializeKeycloak() {
               });
               
               if (updateResponse.ok) {
-                console.log(`✅ Client redirect URIs updated: ${redirectUris.join(', ')}`);
+                console.log(`✅ Client redirect URIs updated successfully`);
+                console.log(`   Updated redirect URIs: ${redirectUris.join(', ')}`);
+                
+                // Verify the update by fetching the client again
+                const verifyResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${adminToken}`
+                  }
+                });
+                
+                if (verifyResponse.ok) {
+                  const verifiedClient = await verifyResponse.json();
+                  console.log(`   Verified redirect URIs in Keycloak: ${verifiedClient.redirectUris?.join(', ') || 'none'}`);
+                }
               } else {
                 const text = await updateResponse.text();
-                console.warn('⚠️  Could not update client redirect URIs:', text);
+                console.error('❌ Failed to update client redirect URIs:', text);
+                console.error(`   Attempted redirect URIs: ${redirectUris.join(', ')}`);
               }
             } else {
               console.warn('⚠️  Could not fetch existing client configuration');

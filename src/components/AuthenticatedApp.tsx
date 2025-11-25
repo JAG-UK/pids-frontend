@@ -411,7 +411,7 @@ export function AuthenticatedApp() {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-5"
           style={{
-            backgroundImage: `url('/images/Majestic%20Grey%20Siberian%20Cat.jpg')`
+            backgroundImage: `url('/images/toad.png')`
           }}
         />
         {/* Content overlay */}

@@ -20,7 +20,7 @@ const LandingPage: React.FC = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/Majestic%20Grey%20Siberian%20Cat.jpg')`
+          backgroundImage: `url('/images/toad.png')`
         }}
       />
       
@@ -34,12 +34,12 @@ const LandingPage: React.FC = () => {
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center text-white">
         {/* Main Title */}
         <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl">
-          PIDS Dataset Explorer
+          TOADS Dataset Directory
         </h1>
         
         {/* Subtitle/Blurb */}
         <p className="mb-12 max-w-3xl text-xl leading-relaxed md:text-2xl lg:text-3xl">
-          Discover and explore public datasets stored on the Filecoin network. 
+          Discover Open Access Datasets stored on the Filecoin network. 
           Access high-quality data from climate research to population statistics, 
           WWW archives to warzone journalism.
 

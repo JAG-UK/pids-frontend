@@ -27,9 +27,22 @@ const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin';
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'pids';
 const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'pids-frontend';
 const KEYCLOAK_EXTERNAL_URL = process.env.KEYCLOAK_EXTERNAL_URL || KEYCLOAK_URL;
+const FRONTEND_URL = process.env.FRONTEND_URL || (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
 
 // Helper function to wait
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to build Keycloak URLs with /auth prefix if needed
+// In production with KC_HTTP_RELATIVE_PATH=/auth, all endpoints are under /auth
+function getKeycloakUrl(path) {
+  const baseUrl = KEYCLOAK_URL.replace(/\/$/, ''); // Remove trailing slash
+  // In production, Keycloak serves at /auth, so add it to the path
+  // Check if we're in production by checking if KEYCLOAK_URL contains 'keycloak:' (internal K8s service)
+  const needsAuthPrefix = baseUrl.includes('keycloak:') || process.env.NODE_ENV === 'production';
+  const authPath = needsAuthPrefix ? '/auth' : '';
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${authPath}${cleanPath}`;
+}
 
 // Wait for Keycloak to be ready
 // Instead of checking health endpoint, try to get an admin token - more reliable
@@ -39,7 +52,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       // Try to get admin token - if this works, Keycloak is ready
-      const tokenUrl = `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`;
+      const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
       const params = new URLSearchParams({
         username: KEYCLOAK_ADMIN,
         password: KEYCLOAK_ADMIN_PASSWORD,
@@ -79,7 +92,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
 async function getAdminToken() {
   console.log('🔑 Getting admin token...');
   
-  const tokenUrl = `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`;
+  const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
   const params = new URLSearchParams({
     username: KEYCLOAK_ADMIN,
     password: KEYCLOAK_ADMIN_PASSWORD,
@@ -117,7 +130,7 @@ async function getAdminToken() {
 // Check if realm exists
 async function realmExists(adminToken) {
   try {
-    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}`, {
+    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -142,7 +155,7 @@ async function createRealm(adminToken) {
   };
   
   try {
-    const response = await fetch(`${KEYCLOAK_URL}/admin/realms`, {
+    const response = await fetch(getKeycloakUrl('/admin/realms'), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -167,7 +180,7 @@ async function createRealm(adminToken) {
 // Check if client exists
 async function clientExists(adminToken) {
   try {
-    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`, {
+    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -248,7 +261,7 @@ async function createClient(adminToken) {
   };
   
   try {
-    const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients`, {
+    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients`), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -280,7 +293,7 @@ async function createRoles(adminToken) {
   
   for (const role of roles) {
     try {
-      const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles`, {
+      const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/roles`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -334,7 +347,7 @@ async function initializeKeycloak() {
       console.log(`🔄 Updating existing client '${KEYCLOAK_CLIENT_ID}'...`);
       try {
         // Get client ID (UUID)
-        const clientsResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`, {
+        const clientsResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${adminToken}`
@@ -347,7 +360,7 @@ async function initializeKeycloak() {
             const clientId = clients[0].id;
             
             // Get the full client configuration first
-            const getClientResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+            const getClientResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${adminToken}`
@@ -397,7 +410,7 @@ async function initializeKeycloak() {
               };
               
               // Update client with full configuration
-              const updateResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+              const updateResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
                 method: 'PUT',
                 headers: {
                   'Authorization': `Bearer ${adminToken}`,
@@ -411,7 +424,7 @@ async function initializeKeycloak() {
                 console.log(`   Updated redirect URIs: ${redirectUris.join(', ')}`);
                 
                 // Verify the update by fetching the client again
-                const verifyResponse = await fetch(`${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`, {
+                const verifyResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
                   method: 'GET',
                   headers: {
                     'Authorization': `Bearer ${adminToken}`

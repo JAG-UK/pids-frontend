@@ -39,7 +39,7 @@ spec:
         app: keycloak
       annotations:
         # Force restart when config changes by updating this timestamp
-        config/restart: "2024-01-01T00:00:00Z"
+        config/restart: "2025-01-01T00:00:00Z"
     spec:
       containers:
       - name: keycloak

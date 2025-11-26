@@ -32,16 +32,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL || (KEYCLOAK_EXTERNAL_URL ? KEYCLO
 // Helper function to wait
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Helper function to build Keycloak URLs with /auth prefix if needed
-// In production with KC_HTTP_RELATIVE_PATH=/auth, all endpoints are under /auth
+// Helper function to build Keycloak URLs
+// Keycloak is now on a separate subdomain (auth.toads.directory) at root path
+// Internal requests use http://keycloak:8080 
 function getKeycloakUrl(path) {
   const baseUrl = KEYCLOAK_URL.replace(/\/$/, ''); // Remove trailing slash
-  // In production, Keycloak serves at /auth, so add it to the path
-  // Check if we're in production by checking if KEYCLOAK_URL contains 'keycloak:' (internal K8s service)
-  const needsAuthPrefix = baseUrl.includes('keycloak:') || process.env.NODE_ENV === 'production';
-  const authPath = needsAuthPrefix ? '/auth' : '';
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${authPath}${cleanPath}`;
+  return `${baseUrl}${cleanPath}`;
 }
 
 // Test basic connectivity to Keycloak service

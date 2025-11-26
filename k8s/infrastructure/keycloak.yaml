@@ -74,28 +74,20 @@ spec:
           value: "/health"
         - name: KC_METRICS_ENABLED
           value: "true"
-        - name: KC_PROXY
-          value: edge
         - name: KC_PROXY_HEADERS
-          value: forwarded
+          value: xforwarded
         - name: FRONTEND_URL
           value: https://toads.directory
-        # Hostname v2 API configuration
-        # KC_HOSTNAME is the public URL (domain only, path handled by KC_HTTP_RELATIVE_PATH)
         - name: KC_HOSTNAME
-          value: https://toads.directory
+          value: https://auth.toads.directory
         - name: KC_HOSTNAME_ADMIN
-          value: https://toads.directory
+          value: https://auth.toads.directory
         - name: KC_HOSTNAME_STRICT
           value: "false"
-        # v2: Use KC_HOSTNAME_BACKCHANNEL_DYNAMIC instead of KC_HOSTNAME_STRICT_BACKCHANNEL
         - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
           value: "true"
         - name: KC_HTTP_ENABLED
           value: "true"
-        # Keycloak serves at /auth internally - this ensures it generates correct asset URLs
-        - name: KC_HTTP_RELATIVE_PATH
-          value: /auth
         - name: KC_HTTP_MANAGEMENT_PORT
           value: "9000"
         # Disable clustering for simpler deployment
@@ -109,9 +101,10 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1000m"
+        # TODO use the real liveness probes once networking is sorted
         livenessProbe:
           httpGet:
-            path: /auth/realms/master
+            path: /realms/master
             port: 8080
           initialDelaySeconds: 120
           periodSeconds: 30
@@ -119,7 +112,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /auth/realms/master
+            path: /realms/master
             port: 8080
           initialDelaySeconds: 90
           periodSeconds: 15

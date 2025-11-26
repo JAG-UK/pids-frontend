@@ -31,15 +31,7 @@ spec:
   - host: toads.directory
     http:
       paths:
-      # Keycloak at /auth - MUST come before / to ensure it's matched first
-      - path: /auth
-        pathType: Prefix
-        backend:
-          service:
-            name: keycloak
-            port:
-              number: 8080
-      # Frontend at root - catch-all after /auth
+      # Frontend at root
       - path: /
         pathType: Prefix
         backend:
@@ -77,6 +69,34 @@ spec:
             port:
               number: 9001
 
-# Keycloak is now handled in the main pids-ingress above
-# This separate ingress has been removed to avoid routing conflicts
+---
+# Keycloak ingress - separate subdomain for simplicity
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-ingress
+  namespace: pids-production
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  tls:
+  - hosts:
+    - auth.toads.directory
+    secretName: keycloak-tls-cert
+  rules:
+  - host: auth.toads.directory
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080
 

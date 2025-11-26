@@ -53,7 +53,7 @@ spec:
         - name: FRONTEND_URL
           value: https://toads.directory
         - name: KEYCLOAK_EXTERNAL_URL
-          value: https://toads.directory/auth
+          value: https://auth.toads.directory
         - name: MONGODB_URI
           value: mongodb://mongodb:27017/pids
         - name: MINIO_ENDPOINT

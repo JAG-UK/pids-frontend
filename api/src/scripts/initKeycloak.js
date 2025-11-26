@@ -44,15 +44,78 @@ function getKeycloakUrl(path) {
   return `${baseUrl}${authPath}${cleanPath}`;
 }
 
+// Test basic connectivity to Keycloak service
+async function testKeycloakConnectivity() {
+  const baseUrl = KEYCLOAK_URL.replace(/\/$/, '');
+  const serviceName = baseUrl.replace(/^https?:\/\//, '').split(':')[0];
+  const servicePort = baseUrl.includes(':') ? baseUrl.split(':').pop() : '8080';
+  
+  console.log(`🔍 Testing connectivity to Keycloak service...`);
+  console.log(`   Service: ${serviceName}:${servicePort}`);
+  console.log(`   Base URL: ${KEYCLOAK_URL}`);
+  
+  // Test 1: Try root path (should work if service is up, even if wrong path)
+  try {
+    const rootTestUrl = `${baseUrl}/`;
+    console.log(`   Testing root path: ${rootTestUrl}`);
+    
+    const rootResponse = await fetch(rootTestUrl, {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    console.log(`   ✅ Service is reachable at root (HTTP ${rootResponse.status})`);
+    return true;
+  } catch (error) {
+    // If root fails, try /auth path
+    try {
+      const authTestUrl = `${baseUrl}/auth/realms/master`;
+      console.log(`   Root path failed, trying /auth path: ${authTestUrl}`);
+      
+      const authResponse = await fetch(authTestUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000)
+      });
+      
+      console.log(`   ✅ Service is reachable at /auth (HTTP ${authResponse.status})`);
+      return true;
+    } catch (authError) {
+      // Both failed - diagnose the issue
+      if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+        console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
+        console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
+        console.log(`   💡 Verify: Service name and namespace are correct`);
+      } else if (error.message.includes('ECONNREFUSED')) {
+        console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
+        console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
+        console.log(`   💡 Verify: Keycloak pods are running and ready`);
+      } else if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        console.log(`   ⚠️  Connection timeout - service may be starting up`);
+      } else {
+        console.log(`   ⚠️  Connectivity test failed: ${error.message}`);
+      }
+      return false;
+    }
+  }
+}
+
 // Wait for Keycloak to be ready
 // Instead of checking health endpoint, try to get an admin token - more reliable
 async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log(`⏳ Waiting for Keycloak to be ready at ${KEYCLOAK_URL}...`);
   
+  // First, test basic connectivity
+  const isReachable = await testKeycloakConnectivity();
+  if (!isReachable) {
+    console.log(`   ⚠️  Basic connectivity test failed, but will continue retrying...`);
+  }
+  
   for (let i = 0; i < maxRetries; i++) {
     try {
       // Try to get admin token - if this works, Keycloak is ready
       const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
+      console.log(`   🔗 Attempting token request to: ${tokenUrl}`);
+      
       const params = new URLSearchParams({
         username: KEYCLOAK_ADMIN,
         password: KEYCLOAK_ADMIN_PASSWORD,
@@ -65,18 +128,43 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: params.toString()
+        body: params.toString(),
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000)
       });
       
       if (response.ok) {
-        console.log('✅ Keycloak is ready!');
+        console.log('✅ Keycloak is ready and responding!');
         return true;
       } else {
         const errorText = await response.text().catch(() => 'Unable to read error');
-        console.log(`   Token request failed: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}`);
+        const errorPreview = errorText.substring(0, 200);
+        
+        // Provide helpful error messages based on status code
+        if (response.status === 404) {
+          console.log(`   ❌ 404 Not Found - Check if path is correct:`);
+          console.log(`      Expected: ${tokenUrl}`);
+          console.log(`      Keycloak may not be serving at /auth path`);
+          console.log(`      Response: ${errorPreview}`);
+        } else if (response.status === 401) {
+          console.log(`   ⚠️  401 Unauthorized - Credentials may be wrong, but service is reachable`);
+        } else {
+          console.log(`   ⚠️  HTTP ${response.status} ${response.statusText} - ${errorPreview}`);
+        }
       }
     } catch (error) {
-      console.log(`   Token request error: ${error.message}`);
+      // Distinguish between different error types
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        console.log(`   ⚠️  Request timeout - Keycloak may be starting up`);
+      } else if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+        const serviceName = KEYCLOAK_URL.replace(/^https?:\/\//, '').split(':')[0];
+        console.log(`   ❌ DNS failure - Cannot resolve '${serviceName}'`);
+        console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
+      } else if (error.message.includes('ECONNREFUSED')) {
+        console.log(`   ❌ Connection refused - Service may not be listening on port 8080`);
+      } else {
+        console.log(`   ⚠️  Request error: ${error.message}`);
+      }
     }
     
     if (i < maxRetries - 1) {
@@ -84,6 +172,22 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
       await sleep(delay);
     }
   }
+  
+  // Final diagnostic information
+  console.log('');
+  console.log('❌ Keycloak initialization failed after all retries');
+  console.log('');
+  console.log('🔍 Diagnostic information:');
+  console.log(`   KEYCLOAK_URL: ${KEYCLOAK_URL}`);
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  console.log(`   Constructed URL: ${getKeycloakUrl('/realms/master/protocol/openid-connect/token')}`);
+  console.log('');
+  console.log('💡 Troubleshooting steps:');
+  console.log('   1. Check if Keycloak service exists: kubectl get svc -n pids-production keycloak');
+  console.log('   2. Check if Keycloak pods are running: kubectl get pods -n pids-production -l app=keycloak');
+  console.log('   3. Check Keycloak logs: kubectl logs -n pids-production -l app=keycloak --tail=50');
+  console.log('   4. Test connectivity from API pod: kubectl exec -n pids-production deployment/pids-api -- curl -v http://keycloak:8080/auth/realms/master');
+  console.log('');
   
   throw new Error(`Keycloak did not become ready after ${maxRetries} attempts`);
 }
@@ -314,6 +418,129 @@ async function createRoles(adminToken) {
   }
 }
 
+// Smart sync: Only update client config if redirect URIs or web origins have changed
+async function syncClientConfig(adminToken) {
+  console.log(`🔄 Checking client '${KEYCLOAK_CLIENT_ID}' configuration...`);
+  
+  try {
+    // Get client ID (UUID)
+    const clientsResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+    
+    if (!clientsResponse.ok) {
+      console.warn('⚠️  Could not fetch client list');
+      return;
+    }
+    
+    const clients = await clientsResponse.json();
+    if (clients.length === 0) {
+      console.warn(`⚠️  Client '${KEYCLOAK_CLIENT_ID}' not found`);
+      return;
+    }
+    
+    const clientId = clients[0].id;
+    
+    // Get the full client configuration
+    const getClientResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+    
+    if (!getClientResponse.ok) {
+      console.warn('⚠️  Could not fetch existing client configuration');
+      return;
+    }
+    
+    const existingClient = await getClientResponse.json();
+    
+    // Calculate desired redirect URIs and web origins
+    const frontendUrl = FRONTEND_URL;
+    const desiredRedirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
+      ? process.env.KEYCLOAK_REDIRECT_URIS.split(',').map(uri => uri.trim())
+      : [
+          'http://localhost:8080',
+          'http://localhost:8080/*',
+          'http://localhost:5173',
+          'http://localhost:5173/*',
+          'http://localhost:3000',
+          'http://localhost:3000/*',
+          frontendUrl,
+          `${frontendUrl}/*`
+        ];
+    
+    const desiredWebOrigins = process.env.KEYCLOAK_WEB_ORIGINS
+      ? process.env.KEYCLOAK_WEB_ORIGINS.split(',').map(origin => origin.trim())
+      : [
+          'http://localhost:8080',
+          'http://localhost:5173',
+          'http://localhost:3000',
+          frontendUrl
+        ];
+    
+    // Normalize arrays for comparison (sort and remove duplicates)
+    const normalizeArray = (arr) => [...new Set(arr.map(s => s.trim()).sort())];
+    const currentRedirectUris = normalizeArray(existingClient.redirectUris || []);
+    const currentWebOrigins = normalizeArray(existingClient.webOrigins || []);
+    const normalizedDesiredRedirectUris = normalizeArray(desiredRedirectUris);
+    const normalizedDesiredWebOrigins = normalizeArray(desiredWebOrigins);
+    
+    // Compare arrays
+    const redirectUrisChanged = 
+      currentRedirectUris.length !== normalizedDesiredRedirectUris.length ||
+      !currentRedirectUris.every((uri, i) => uri === normalizedDesiredRedirectUris[i]);
+    
+    const webOriginsChanged = 
+      currentWebOrigins.length !== normalizedDesiredWebOrigins.length ||
+      !currentWebOrigins.every((origin, i) => origin === normalizedDesiredWebOrigins[i]);
+    
+    if (!redirectUrisChanged && !webOriginsChanged) {
+      console.log(`✅ Client configuration is up to date (no changes needed)`);
+      return;
+    }
+    
+    // Configuration has changed, update it
+    console.log(`📝 Client configuration changed, updating...`);
+    if (redirectUrisChanged) {
+      console.log(`   Redirect URIs: ${currentRedirectUris.join(', ')} → ${normalizedDesiredRedirectUris.join(', ')}`);
+    }
+    if (webOriginsChanged) {
+      console.log(`   Web Origins: ${currentWebOrigins.join(', ')} → ${normalizedDesiredWebOrigins.join(', ')}`);
+    }
+    
+    // Update only the changed fields, keep everything else
+    const updatedClient = {
+      ...existingClient,
+      redirectUris: normalizedDesiredRedirectUris,
+      webOrigins: normalizedDesiredWebOrigins
+    };
+    
+    // Update client
+    const updateResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatedClient)
+    });
+    
+    if (updateResponse.ok) {
+      console.log(`✅ Client configuration updated successfully`);
+    } else {
+      const text = await updateResponse.text();
+      console.error(`❌ Failed to update client configuration: ${updateResponse.status} ${text}`);
+    }
+  } catch (error) {
+    console.warn(`⚠️  Failed to sync client configuration: ${error.message}`);
+  }
+}
+
 // Main initialization function
 async function initializeKeycloak() {
   try {
@@ -343,111 +570,8 @@ async function initializeKeycloak() {
     if (!clientAlreadyExists) {
       await createClient(adminToken);
     } else {
-      // Update existing client to ensure redirect URIs are correct
-      console.log(`🔄 Updating existing client '${KEYCLOAK_CLIENT_ID}'...`);
-      try {
-        // Get client ID (UUID)
-        const clientsResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${adminToken}`
-          }
-        });
-        
-        if (clientsResponse.ok) {
-          const clients = await clientsResponse.json();
-          if (clients.length > 0) {
-            const clientId = clients[0].id;
-            
-            // Get the full client configuration first
-            const getClientResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${adminToken}`
-              }
-            });
-            
-            if (getClientResponse.ok) {
-              const existingClient = await getClientResponse.json();
-              
-              // Get frontend URL for redirect URIs
-              const frontendUrl = process.env.FRONTEND_URL || 
-                (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
-              
-              console.log(`   Using frontend URL for redirect URIs: ${frontendUrl}`);
-              
-              // Keycloak requires explicit paths - wildcard doesn't always match root
-              // So we need both the root path and the wildcard pattern
-              const redirectUris = process.env.KEYCLOAK_REDIRECT_URIS 
-                ? process.env.KEYCLOAK_REDIRECT_URIS.split(',')
-                : [
-                    'http://localhost:8080',
-                    'http://localhost:8080/*',
-                    'http://localhost:5173',
-                    'http://localhost:5173/*',
-                    'http://localhost:3000',
-                    'http://localhost:3000/*',
-                    frontendUrl,  // Root path (exact match)
-                    `${frontendUrl}/*`  // Wildcard pattern
-                  ];
-              
-              console.log(`   Setting redirect URIs: ${redirectUris.join(', ')}`);
-              
-              const webOrigins = process.env.KEYCLOAK_WEB_ORIGINS
-                ? process.env.KEYCLOAK_WEB_ORIGINS.split(',')
-                : [
-                    'http://localhost:8080',
-                    'http://localhost:5173',
-                    'http://localhost:3000',
-                    frontendUrl
-                  ];
-              
-              // Update only the redirect URIs and web origins, keep everything else
-              const updatedClient = {
-                ...existingClient,
-                redirectUris: redirectUris,
-                webOrigins: webOrigins
-              };
-              
-              // Update client with full configuration
-              const updateResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${adminToken}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedClient)
-              });
-              
-              if (updateResponse.ok) {
-                console.log(`✅ Client redirect URIs updated successfully`);
-                console.log(`   Updated redirect URIs: ${redirectUris.join(', ')}`);
-                
-                // Verify the update by fetching the client again
-                const verifyResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
-                  method: 'GET',
-                  headers: {
-                    'Authorization': `Bearer ${adminToken}`
-                  }
-                });
-                
-                if (verifyResponse.ok) {
-                  const verifiedClient = await verifyResponse.json();
-                  console.log(`   Verified redirect URIs in Keycloak: ${verifiedClient.redirectUris?.join(', ') || 'none'}`);
-                }
-              } else {
-                const text = await updateResponse.text();
-                console.error('❌ Failed to update client redirect URIs:', text);
-                console.error(`   Attempted redirect URIs: ${redirectUris.join(', ')}`);
-              }
-            } else {
-              console.warn('⚠️  Could not fetch existing client configuration');
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️  Failed to update client redirect URIs:', error.message);
-      }
+      // Smart sync: Only update redirect URIs if they've actually changed
+      await syncClientConfig(adminToken);
     }
     
     // Create roles

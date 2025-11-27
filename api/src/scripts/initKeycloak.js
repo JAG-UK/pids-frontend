@@ -86,19 +86,20 @@ async function testKeycloakConnectivity() {
     } catch (rootError) {
       // Diagnose the issue
       if (rootError.message.includes('ENOTFOUND') || rootError.message.includes('getaddrinfo')) {
-      console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
-      console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
-      console.log(`   💡 Verify: Service name and namespace are correct`);
-    } else if (error.message.includes('ECONNREFUSED')) {
-      console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
-      console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
-      console.log(`   💡 Verify: Keycloak pods are running and ready`);
-    } else if (error.name === 'AbortError' || error.message.includes('timeout')) {
-      console.log(`   ⚠️  Connection timeout - service may be starting up`);
-    } else {
-      console.log(`   ⚠️  Connectivity test failed: ${error.message}`);
+        console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
+        console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
+        console.log(`   💡 Verify: Service name and namespace are correct`);
+      } else if (rootError.message.includes('ECONNREFUSED')) {
+        console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
+        console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
+        console.log(`   💡 Verify: Keycloak pods are running and ready`);
+      } else if (rootError.name === 'AbortError' || rootError.message.includes('timeout')) {
+        console.log(`   ⚠️  Connection timeout - service may be starting up`);
+      } else {
+        console.log(`   ⚠️  Connectivity test failed: ${rootError.message}`);
+      }
+      return false;
     }
-    return false;
   }
 }
 
@@ -610,19 +611,6 @@ async function initializeKeycloak() {
     console.error('❌ Keycloak initialization failed:', error.message);
     throw error;
   }
-}
-
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('initKeycloak.js')) {
-  initializeKeycloak()
-    .then(() => {
-      console.log('✅ Initialization complete');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Initialization failed:', error);
-      process.exit(1);
-    });
 }
 
 // Export for use in other modules

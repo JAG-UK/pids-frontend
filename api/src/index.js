@@ -145,7 +145,15 @@ async function startServer() {
     // Only run if KEYCLOAK_URL is set and we're in production
     if (process.env.KEYCLOAK_URL && process.env.NODE_ENV === 'production') {
       try {
-        const initializeKeycloak = (await import('./scripts/initKeycloak.js')).default;
+        // Use dynamic import with full path including .js extension
+        const keycloakModule = await import('./scripts/initKeycloak.js');
+        const initializeKeycloak = keycloakModule.default;
+        
+        if (typeof initializeKeycloak !== 'function') {
+          console.warn('⚠️  Keycloak initialization script did not export a function');
+          return;
+        }
+        
         // Run initialization in background, don't block server startup
         initializeKeycloak().catch((error) => {
           console.warn('⚠️  Keycloak initialization failed (non-critical):', error.message);
@@ -153,6 +161,7 @@ async function startServer() {
         });
       } catch (error) {
         console.warn('⚠️  Could not load Keycloak initialization script:', error.message);
+        console.warn('   Error details:', error.stack);
       }
     }
 

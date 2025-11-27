@@ -21,7 +21,7 @@
 // Use built-in fetch (Node 18+)
 // Note: If using Node < 18, you'll need to install node-fetch and import it
 
-const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost';
 const KEYCLOAK_ADMIN = process.env.KEYCLOAK_ADMIN || 'admin';
 const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin';
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'pids';
@@ -35,8 +35,8 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // Helper function to build Keycloak URLs
 // Keycloak is now on a separate subdomain (auth.toads.directory) at root path
 // Internal requests use http://keycloak:8080 
-function getKeycloakUrl(path) {
-  const baseUrl = KEYCLOAK_URL.replace(/\/$/, ''); // Remove trailing slash
+function getKeycloakUrl(path, isMgmtEndpoint = false) {
+  const baseUrl = KEYCLOAK_URL.replace(/\/$/, '').append(isMgmtEndpoint ? ':9000' : ':8080'); // Remove any trailing slash and add correct port
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${cleanPath}`;
 }
@@ -117,7 +117,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       // First check if Keycloak health endpoint says it's ready
-      const healthUrl = getKeycloakUrl('/health/ready');
+      const healthUrl = getKeycloakUrl('/health/ready', isMgmtEndpoint=true);
       const healthResponse = await fetch(healthUrl, {
         method: 'GET',
         signal: AbortSignal.timeout(5000)

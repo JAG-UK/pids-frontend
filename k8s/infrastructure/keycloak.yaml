@@ -11,6 +11,9 @@ spec:
     - port: 8080
       targetPort: 8080
       name: http
+    - port: 9000
+      targetPort: 9000
+      name: management
   selector:
     app: keycloak
   type: ClusterIP
@@ -49,6 +52,8 @@ spec:
         ports:
         - containerPort: 8080
           name: http
+        - containerPort: 9000
+          name: management
         env:
         - name: KEYCLOAK_ADMIN
           value: admin
@@ -101,19 +106,18 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1000m"
-        # TODO use the real liveness probes once networking is sorted
         livenessProbe:
           httpGet:
-            path: /realms/master
-            port: 8080
+            path: /health/ready
+            port: 9000
           initialDelaySeconds: 120
           periodSeconds: 30
           timeoutSeconds: 10
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /realms/master
-            port: 8080
+            path: /health/ready
+            port: 9000
           initialDelaySeconds: 90
           periodSeconds: 15
           timeoutSeconds: 10

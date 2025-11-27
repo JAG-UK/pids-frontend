@@ -44,7 +44,7 @@ services:
   - key: MONGODB_URI
     value: ${pids-mongodb.DATABASE_URL}
   - key: KEYCLOAK_URL
-    value: http://keycloak:8080
+    value: http://keycloak
   - key: KEYCLOAK_REALM
     value: pids
   - key: KEYCLOAK_CLIENT_ID

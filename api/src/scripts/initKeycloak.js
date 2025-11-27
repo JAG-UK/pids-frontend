@@ -27,97 +27,26 @@ const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin';
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'pids';
 const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'pids-frontend';
 const KEYCLOAK_EXTERNAL_URL = process.env.KEYCLOAK_EXTERNAL_URL || KEYCLOAK_URL;
-const FRONTEND_URL = process.env.FRONTEND_URL || (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
+const FRONTEND_URL = process.env.FRONTEND_URL || (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\./, '') : 'http://localhost:8080');
+
+// Keycloak operates on 2 ports
+// Extract hostname from KEYCLOAK_URL (e.g., http://keycloak:8080 -> http://keycloak)
+const baseUrl = KEYCLOAK_URL.replace(/\/$/, '').replace(/:\d+$/, ''); // Remove trailing port
+const managementUrl = `${baseUrl}:9000`; // Management/health port
+const serviceUrl = `${baseUrl}:8080`;     // Main service port
 
 // Helper function to wait
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper function to build Keycloak URLs
-// Keycloak is now on a separate subdomain (auth.toads.directory) at root path
-// Internal requests use http://keycloak:8080 
-function getKeycloakUrl(path, isMgmtEndpoint = false) {
-  const baseUrl = KEYCLOAK_URL.replace(/\/$/, '').append(isMgmtEndpoint ? ':9000' : ':8080'); // Remove any trailing slash and add correct port
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${cleanPath}`;
-}
-
-// Test basic connectivity to Keycloak service
-async function testKeycloakConnectivity() {
-  const baseUrl = KEYCLOAK_URL.replace(/\/$/, '');
-  const serviceName = baseUrl.replace(/^https?:\/\//, '').split(':')[0];
-  const servicePort = baseUrl.includes(':') ? baseUrl.split(':').pop() : '8080';
-  
-  console.log(`🔍 Testing connectivity to Keycloak service...`);
-  console.log(`   Service: ${serviceName}:${servicePort}`);
-  console.log(`   Base URL: ${KEYCLOAK_URL}`);
-  
-  // Test connectivity by checking the health endpoint first
-  try {
-    const healthUrl = `${baseUrl}/health/ready`;
-    console.log(`   Testing health endpoint: ${healthUrl}`);
-    
-    const healthResponse = await fetch(healthUrl, {
-      method: 'GET',
-      signal: AbortSignal.timeout(3000)
-    });
-    
-    if (healthResponse.ok) {
-      console.log(`   ✅ Keycloak is ready (HTTP ${healthResponse.status})`);
-      return true;
-    } else {
-      console.log(`   ⚠️  Health check returned HTTP ${healthResponse.status} - Keycloak may still be starting`);
-      // Still return true if we got a response (service is reachable)
-      return true;
-    }
-  } catch (error) {
-    // If health endpoint fails, try the root endpoint as fallback
-    try {
-      const rootUrl = `${baseUrl}/`;
-      console.log(`   Health endpoint failed, trying root: ${rootUrl}`);
-      
-      const rootResponse = await fetch(rootUrl, {
-        method: 'GET',
-        signal: AbortSignal.timeout(3000)
-      });
-      
-      // Any response means the service is reachable
-      console.log(`   ✅ Service is reachable (HTTP ${rootResponse.status})`);
-      return true;
-    } catch (rootError) {
-      // Diagnose the issue
-      if (rootError.message.includes('ENOTFOUND') || rootError.message.includes('getaddrinfo')) {
-        console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
-        console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
-        console.log(`   💡 Verify: Service name and namespace are correct`);
-      } else if (rootError.message.includes('ECONNREFUSED')) {
-        console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
-        console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
-        console.log(`   💡 Verify: Keycloak pods are running and ready`);
-      } else if (rootError.name === 'AbortError' || rootError.message.includes('timeout')) {
-        console.log(`   ⚠️  Connection timeout - service may be starting up`);
-      } else {
-        console.log(`   ⚠️  Connectivity test failed: ${rootError.message}`);
-      }
-      return false;
-    }
-  }
-}
 
 // Wait for Keycloak to be ready
 // First check health endpoint, then try to get an admin token
 async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log(`⏳ Waiting for Keycloak to be ready at ${KEYCLOAK_URL}...`);
-  
-  // First, test basic connectivity
-  const isReachable = await testKeycloakConnectivity();
-  if (!isReachable) {
-    console.log(`   ⚠️  Basic connectivity test failed, but will continue retrying...`);
-  }
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       // First check if Keycloak health endpoint says it's ready
-      const healthUrl = getKeycloakUrl('/health/ready', isMgmtEndpoint=true);
+      const healthUrl = `${managementUrl}/health/ready`;
       const healthResponse = await fetch(healthUrl, {
         method: 'GET',
         signal: AbortSignal.timeout(5000)
@@ -130,47 +59,9 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
           await sleep(delay);
         }
         continue;
-      }
-      
-      // Health check passed, now try to get admin token - if this works, Keycloak is fully ready
-      const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
-      console.log(`   🔗 Health check passed, attempting token request to: ${tokenUrl}`);
-      
-      const params = new URLSearchParams({
-        username: KEYCLOAK_ADMIN,
-        password: KEYCLOAK_ADMIN_PASSWORD,
-        grant_type: 'password',
-        client_id: 'admin-cli'
-      });
-      
-      const response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params.toString(),
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000)
-      });
-      
-      if (response.ok) {
-        console.log('✅ Keycloak is ready and responding!');
-        return true;
       } else {
-        const errorText = await response.text().catch(() => 'Unable to read error');
-        const errorPreview = errorText.substring(0, 200);
-        
-        // Provide helpful error messages based on status code
-        if (response.status === 404) {
-          console.log(`   ❌ 404 Not Found - Check if path is correct:`);
-          console.log(`      Expected: ${tokenUrl}`);
-          console.log(`      Keycloak may not be ready yet, or realm may not exist`);
-          console.log(`      Response: ${errorPreview}`);
-        } else if (response.status === 401) {
-          console.log(`   ⚠️  401 Unauthorized - Credentials may be wrong, but service is reachable`);
-        } else {
-          console.log(`   ⚠️  HTTP ${response.status} ${response.statusText} - ${errorPreview}`);
-        }
+        console.log(`   🔗 Health check passed`);
+        return true;
       }
     } catch (error) {
       // Distinguish between different error types
@@ -198,15 +89,8 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log('❌ Keycloak initialization failed after all retries');
   console.log('');
   console.log('🔍 Diagnostic information:');
-  console.log(`   KEYCLOAK_URL: ${KEYCLOAK_URL}`);
+  console.log(`   KEYCLOAK_URLS: ${managementUrl}, ${serviceUrl}`);
   console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-  console.log(`   Constructed URL: ${getKeycloakUrl('/realms/master/protocol/openid-connect/token')}`);
-  console.log('');
-  console.log('💡 Troubleshooting steps:');
-  console.log('   1. Check if Keycloak service exists: kubectl get svc -n pids-production keycloak');
-  console.log('   2. Check if Keycloak pods are running: kubectl get pods -n pids-production -l app=keycloak');
-  console.log('   3. Check Keycloak logs: kubectl logs -n pids-production -l app=keycloak --tail=50');
-  console.log('   4. Test connectivity from API pod: kubectl exec -n pids-production deployment/pids-api -- curl -v http://keycloak:8080/realms/master');
   console.log('');
   
   throw new Error(`Keycloak did not become ready after ${maxRetries} attempts`);
@@ -216,7 +100,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
 async function getAdminToken() {
   console.log('🔑 Getting admin token...');
   
-  const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
+  const tokenUrl =`${serviceUrl}/realms/master/protocol/openid-connect/token`;
   const params = new URLSearchParams({
     username: KEYCLOAK_ADMIN,
     password: KEYCLOAK_ADMIN_PASSWORD,
@@ -253,8 +137,9 @@ async function getAdminToken() {
 
 // Check if realm exists
 async function realmExists(adminToken) {
+  const realmUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}`;
   try {
-    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}`), {
+    const response = await fetch(realmUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -279,7 +164,8 @@ async function createRealm(adminToken) {
   };
   
   try {
-    const response = await fetch(getKeycloakUrl('/admin/realms'), {
+    const realmUrl = `${serviceUrl}/admin/realms`;
+    const response = await fetch(realmUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -304,7 +190,8 @@ async function createRealm(adminToken) {
 // Check if client exists
 async function clientExists(adminToken) {
   try {
-    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
+    const clientUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`;
+    const response = await fetch(clientUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -385,7 +272,8 @@ async function createClient(adminToken) {
   };
   
   try {
-    const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients`), {
+    const clientUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}/clients`;
+    const response = await fetch(clientUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -417,7 +305,8 @@ async function createRoles(adminToken) {
   
   for (const role of roles) {
     try {
-      const response = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/roles`), {
+      const roleUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}/roles`;
+      const response = await fetch(roleUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -443,8 +332,8 @@ async function syncClientConfig(adminToken) {
   console.log(`🔄 Checking client '${KEYCLOAK_CLIENT_ID}' configuration...`);
   
   try {
-    // Get client ID (UUID)
-    const clientsResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`), {
+    let clientUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}/clients?clientId=${KEYCLOAK_CLIENT_ID}`;
+    const clientsResponse = await fetch(clientUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -465,7 +354,8 @@ async function syncClientConfig(adminToken) {
     const clientId = clients[0].id;
     
     // Get the full client configuration
-    const getClientResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
+    clientUrl = `${serviceUrl}/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`;
+    const getClientResponse = await fetch(clientUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`
@@ -541,7 +431,7 @@ async function syncClientConfig(adminToken) {
     };
     
     // Update client
-    const updateResponse = await fetch(getKeycloakUrl(`/admin/realms/${KEYCLOAK_REALM}/clients/${clientId}`), {
+    const updateResponse = await fetch(clientUrl, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -615,4 +505,17 @@ async function initializeKeycloak() {
 
 // Export for use in other modules
 export default initializeKeycloak;
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('initKeycloak.js')) {
+  initializeKeycloak()
+    .then(() => {
+      console.log('✅ Initialization complete');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Initialization failed:', error);
+      process.exit(1);
+    });
+}
 

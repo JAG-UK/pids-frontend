@@ -51,48 +51,35 @@ async function testKeycloakConnectivity() {
   console.log(`   Service: ${serviceName}:${servicePort}`);
   console.log(`   Base URL: ${KEYCLOAK_URL}`);
   
-  // Test 1: Try root path (should work if service is up, even if wrong path)
+  // Test connectivity by checking the realms endpoint
   try {
-    const rootTestUrl = `${baseUrl}/`;
-    console.log(`   Testing root path: ${rootTestUrl}`);
+    const testUrl = `${baseUrl}/realms/master`;
+    console.log(`   Testing realms endpoint: ${testUrl}`);
     
-    const rootResponse = await fetch(rootTestUrl, {
+    const response = await fetch(testUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(3000)
     });
     
-    console.log(`   ✅ Service is reachable at root (HTTP ${rootResponse.status})`);
+    // Any response (even 404) means the service is reachable
+    console.log(`   ✅ Service is reachable (HTTP ${response.status})`);
     return true;
   } catch (error) {
-    // If root fails, try /auth path
-    try {
-      const authTestUrl = `${baseUrl}/auth/realms/master`;
-      console.log(`   Root path failed, trying /auth path: ${authTestUrl}`);
-      
-      const authResponse = await fetch(authTestUrl, {
-        method: 'GET',
-        signal: AbortSignal.timeout(3000)
-      });
-      
-      console.log(`   ✅ Service is reachable at /auth (HTTP ${authResponse.status})`);
-      return true;
-    } catch (authError) {
-      // Both failed - diagnose the issue
-      if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
-        console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
-        console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
-        console.log(`   💡 Verify: Service name and namespace are correct`);
-      } else if (error.message.includes('ECONNREFUSED')) {
-        console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
-        console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
-        console.log(`   💡 Verify: Keycloak pods are running and ready`);
-      } else if (error.name === 'AbortError' || error.message.includes('timeout')) {
-        console.log(`   ⚠️  Connection timeout - service may be starting up`);
-      } else {
-        console.log(`   ⚠️  Connectivity test failed: ${error.message}`);
-      }
-      return false;
+    // Diagnose the issue
+    if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+      console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
+      console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
+      console.log(`   💡 Verify: Service name and namespace are correct`);
+    } else if (error.message.includes('ECONNREFUSED')) {
+      console.log(`   ❌ Connection refused - service exists but not listening on port ${servicePort}`);
+      console.log(`   💡 Check: kubectl get pods -n pids-production -l app=keycloak`);
+      console.log(`   💡 Verify: Keycloak pods are running and ready`);
+    } else if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      console.log(`   ⚠️  Connection timeout - service may be starting up`);
+    } else {
+      console.log(`   ⚠️  Connectivity test failed: ${error.message}`);
     }
+    return false;
   }
 }
 
@@ -141,7 +128,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
         if (response.status === 404) {
           console.log(`   ❌ 404 Not Found - Check if path is correct:`);
           console.log(`      Expected: ${tokenUrl}`);
-          console.log(`      Keycloak may not be serving at /auth path`);
+          console.log(`      Keycloak may not be ready yet, or realm may not exist`);
           console.log(`      Response: ${errorPreview}`);
         } else if (response.status === 401) {
           console.log(`   ⚠️  401 Unauthorized - Credentials may be wrong, but service is reachable`);

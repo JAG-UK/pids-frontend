@@ -72,6 +72,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Use the URL provided by the API (already converted for browser access)
         const keycloakUrl = config.data.url;
         console.log('Using Keycloak URL:', keycloakUrl);
+        console.log('Frontend origin (redirect URI will be):', window.location.origin);
+        console.log('Expected redirect URI should be:', window.location.origin);
         
         const kc = new Keycloak({
           url: keycloakUrl,
@@ -103,10 +105,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                  window.location.hostname === 'localhost' || 
                                  window.location.hostname === '127.0.0.1';
         
+        // Keycloak JS adapter automatically uses window.location.origin as redirect URI
+        // But we need to ensure it uses the frontend domain, not Keycloak domain
+        // The redirect URIs in Keycloak client config must include the frontend domain
         const authenticated = await kc.init({
           onLoad: 'check-sso',
-          // Disable iframe check to avoid CSP/timeout issues
-          // Can be re-enabled later if needed, but redirect-based SSO works fine
+          // Disable iframe check to avoid CSP/timeout issues and third-party cookie problems
+          // This prevents redirect loops when Keycloak is on a different subdomain
           checkLoginIframe: false,
           silentCheckSsoRedirectUri: undefined,
           // Only use PKCE if we have a secure context (HTTPS)

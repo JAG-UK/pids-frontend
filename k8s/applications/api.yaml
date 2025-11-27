@@ -79,7 +79,7 @@ spec:
         - name: KEYCLOAK_URL
           value: http://keycloak:8080
         - name: KEYCLOAK_EXTERNAL_URL
-          value: https://toads.directory/auth
+          value: https://auth.toads.directory
         - name: KEYCLOAK_REALM
           value: pids
         - name: KEYCLOAK_CLIENT_ID

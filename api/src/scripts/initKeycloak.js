@@ -51,22 +51,41 @@ async function testKeycloakConnectivity() {
   console.log(`   Service: ${serviceName}:${servicePort}`);
   console.log(`   Base URL: ${KEYCLOAK_URL}`);
   
-  // Test connectivity by checking the realms endpoint
+  // Test connectivity by checking the health endpoint first
   try {
-    const testUrl = `${baseUrl}/realms/master`;
-    console.log(`   Testing realms endpoint: ${testUrl}`);
+    const healthUrl = `${baseUrl}/health/ready`;
+    console.log(`   Testing health endpoint: ${healthUrl}`);
     
-    const response = await fetch(testUrl, {
+    const healthResponse = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(3000)
     });
     
-    // Any response (even 404) means the service is reachable
-    console.log(`   ✅ Service is reachable (HTTP ${response.status})`);
-    return true;
+    if (healthResponse.ok) {
+      console.log(`   ✅ Keycloak is ready (HTTP ${healthResponse.status})`);
+      return true;
+    } else {
+      console.log(`   ⚠️  Health check returned HTTP ${healthResponse.status} - Keycloak may still be starting`);
+      // Still return true if we got a response (service is reachable)
+      return true;
+    }
   } catch (error) {
-    // Diagnose the issue
-    if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+    // If health endpoint fails, try the root endpoint as fallback
+    try {
+      const rootUrl = `${baseUrl}/`;
+      console.log(`   Health endpoint failed, trying root: ${rootUrl}`);
+      
+      const rootResponse = await fetch(rootUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000)
+      });
+      
+      // Any response means the service is reachable
+      console.log(`   ✅ Service is reachable (HTTP ${rootResponse.status})`);
+      return true;
+    } catch (rootError) {
+      // Diagnose the issue
+      if (rootError.message.includes('ENOTFOUND') || rootError.message.includes('getaddrinfo')) {
       console.log(`   ❌ DNS resolution failed - cannot resolve '${serviceName}'`);
       console.log(`   💡 Check: kubectl get svc -n pids-production keycloak`);
       console.log(`   💡 Verify: Service name and namespace are correct`);
@@ -84,7 +103,7 @@ async function testKeycloakConnectivity() {
 }
 
 // Wait for Keycloak to be ready
-// Instead of checking health endpoint, try to get an admin token - more reliable
+// First check health endpoint, then try to get an admin token
 async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log(`⏳ Waiting for Keycloak to be ready at ${KEYCLOAK_URL}...`);
   
@@ -96,9 +115,25 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   
   for (let i = 0; i < maxRetries; i++) {
     try {
-      // Try to get admin token - if this works, Keycloak is ready
+      // First check if Keycloak health endpoint says it's ready
+      const healthUrl = getKeycloakUrl('/health/ready');
+      const healthResponse = await fetch(healthUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!healthResponse.ok) {
+        console.log(`   ⏳ Health check: HTTP ${healthResponse.status} - Keycloak still starting...`);
+        if (i < maxRetries - 1) {
+          console.log(`   Attempt ${i + 1}/${maxRetries}... waiting ${delay/1000}s`);
+          await sleep(delay);
+        }
+        continue;
+      }
+      
+      // Health check passed, now try to get admin token - if this works, Keycloak is fully ready
       const tokenUrl = getKeycloakUrl('/realms/master/protocol/openid-connect/token');
-      console.log(`   🔗 Attempting token request to: ${tokenUrl}`);
+      console.log(`   🔗 Health check passed, attempting token request to: ${tokenUrl}`);
       
       const params = new URLSearchParams({
         username: KEYCLOAK_ADMIN,
@@ -170,7 +205,7 @@ async function waitForKeycloak(maxRetries = 30, delay = 5000) {
   console.log('   1. Check if Keycloak service exists: kubectl get svc -n pids-production keycloak');
   console.log('   2. Check if Keycloak pods are running: kubectl get pods -n pids-production -l app=keycloak');
   console.log('   3. Check Keycloak logs: kubectl logs -n pids-production -l app=keycloak --tail=50');
-  console.log('   4. Test connectivity from API pod: kubectl exec -n pids-production deployment/pids-api -- curl -v http://keycloak:8080/auth/realms/master');
+  console.log('   4. Test connectivity from API pod: kubectl exec -n pids-production deployment/pids-api -- curl -v http://keycloak:8080/realms/master');
   console.log('');
   
   throw new Error(`Keycloak did not become ready after ${maxRetries} attempts`);
@@ -292,9 +327,9 @@ async function createClient(adminToken) {
   
   // Determine redirect URIs based on environment
   // Redirect URIs should point to the FRONTEND, not Keycloak
-  // In production, use the frontend URL (without /auth)
+  // In production, use the frontend URL (without auth. prefix)
   const frontendUrl = process.env.FRONTEND_URL || 
-    (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\/auth\/?$/, '') : 'http://localhost:8080');
+    (KEYCLOAK_EXTERNAL_URL ? KEYCLOAK_EXTERNAL_URL.replace(/\auth\.?$/, '') : 'http://localhost:8080');
   
   // Keycloak requires explicit paths - wildcard doesn't always match root
   // So we need both the root path and the wildcard pattern

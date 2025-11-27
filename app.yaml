@@ -46,7 +46,7 @@ services:
   - key: KEYCLOAK_URL
     value: http://keycloak:8080
   - key: KEYCLOAK_EXTERNAL_URL
-    value: ${keycloak.PUBLIC_URL}
+    value: https://auth.toads.directory
   - key: KEYCLOAK_REALM
     value: pids
   - key: KEYCLOAK_CLIENT_ID
@@ -77,12 +77,12 @@ services:
   instance_size_slug: basic-xxs
   http_port: 8080
   routes:
-  - path: /auth
+  - path: /
   health_check:
-    http_path: /health
-    initial_delay_seconds: 60
-    period_seconds: 10
-    timeout_seconds: 5
+    http_path: /health/ready
+    initial_delay_seconds: 120
+    period_seconds: 30
+    timeout_seconds: 10
     success_threshold: 1
     failure_threshold: 3
   envs:
@@ -98,15 +98,21 @@ services:
     value: ${pids-postgres.DATABASE_USER}
   - key: KC_DB_PASSWORD
     value: ${pids-postgres.DATABASE_PASSWORD}
+  - key: KC_HOSTNAME
+    value: https://auth.toads.directory
+  - key: KC_HOSTNAME_ADMIN
+    value: https://auth.toads.directory
   - key: KC_HOSTNAME_STRICT
     value: "false"
-  - key: KC_HOSTNAME_STRICT_HTTPS
-    value: "false"
+  - key: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+    value: "true"
   - key: KC_HTTP_ENABLED
     value: "true"
   - key: KC_HEALTH_ENABLED
     value: "true"
-  run_command: start-dev
+  - key: KC_PROXY_HEADERS
+    value: xforwarded
+  run_command: start
 
 databases:
 - name: pids-mongodb

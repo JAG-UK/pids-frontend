@@ -17,21 +17,23 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    # Keycloak proxy configuration (applies to /auth path)
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # Cloudflare proxy handles HTTPS - re-enable these if doing SSL in cluster
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     - toads.directory
+    - auth.toads.directory
     secretName: pids-tls-cert
+    # keycloak-tls-cert
   rules:
   - host: toads.directory
     http:
       paths:
-      # Frontend at root
       - path: /
         pathType: Prefix
         backend:
@@ -39,56 +41,6 @@ spec:
             name: frontend
             port:
               number: 80
-
----
-# Optional: Ingress for MinIO console (admin access)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: minio-console-ingress
-  namespace: pids-production
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Optional: Add basic auth or OAuth2 proxy for security
-spec:
-  tls:
-  - hosts:
-    - minio.your-domain.com  # CHANGE THIS
-    secretName: minio-console-tls-cert
-  rules:
-  - host: minio.your-domain.com  # CHANGE THIS
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: minio
-            port:
-              number: 9001
-
----
-# Keycloak ingress - separate subdomain for simplicity
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: keycloak-ingress
-  namespace: pids-production
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/proxy-buffering: "off"
-spec:
-  tls:
-  - hosts:
-    - auth.toads.directory
-    secretName: keycloak-tls-cert
-  rules:
   - host: auth.toads.directory
     http:
       paths:
@@ -99,4 +51,3 @@ spec:
             name: keycloak
             port:
               number: 8080
-

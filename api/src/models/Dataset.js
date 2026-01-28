@@ -40,10 +40,18 @@ const datasetSchema = new mongoose.Schema({
   projectUrl: { type: String }, // project_url from manifest
   uuid: { type: String }, // uuid from manifest (kept for backward compatibility)
   nPieces: { type: Number }, // n_pieces from manifest
-  pieces: [{ type: mongoose.Schema.Types.Mixed }] // pieces array from manifest
+  pieces: [{ type: mongoose.Schema.Types.Mixed }], // pieces array from manifest
+  network: { 
+    type: String, 
+    enum: ['mainnet', 'calibration'], 
+    default: 'mainnet',
+    required: true 
+  }
 }, { timestamps: true });
 
 // Index for search functionality
 datasetSchema.index({ title: 'text', description: 'text', tags: 'text' });
+// Index for network filtering
+datasetSchema.index({ network: 1, status: 1 });
 
 export default mongoose.model('Dataset', datasetSchema); 

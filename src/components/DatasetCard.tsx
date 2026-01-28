@@ -58,7 +58,21 @@ export function DatasetCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg leading-tight">{dataset.name}</CardTitle>
-          {renderStatusBadge()}
+          <div className="flex items-center gap-2">
+            {dataset.network && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  dataset.network === 'mainnet' 
+                    ? 'border-chart-1 text-chart-1' 
+                    : 'border-chart-2 text-chart-2'
+                }`}
+              >
+                {dataset.network === 'mainnet' ? 'Mainnet' : 'Calibration'}
+              </Badge>
+            )}
+            {renderStatusBadge()}
+          </div>
         </div>
       </CardHeader>
       

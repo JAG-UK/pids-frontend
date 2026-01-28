@@ -469,7 +469,8 @@ const transformDataset = (apiDataset: any): Dataset => {
       projectUrl: apiDataset.projectUrl, // Project website URL from manifest
       manifestFile: apiDataset.manifestFile, // Path to manifest file in MinIO
       files: apiDataset.fileStructure ? transformFileStructure(apiDataset.fileStructure) : undefined,
-      pieces: apiDataset.pieces || undefined // Include pieces from manifest format
+      pieces: apiDataset.pieces || undefined, // Include pieces from manifest format
+      network: apiDataset.network || 'mainnet' // Network (mainnet or calibration)
     };
     
     console.log('✅ transformDataset output:', transformed);
@@ -603,11 +604,16 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
 
 // Mock API functions
 const mockApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string, network?: 'mainnet' | 'calibration'): Promise<PaginatedDatasets> {
     // Simulate network delay
     await delay(300);
     
-    const filteredDatasets = filterDatasets(mockDatasets, searchQuery, filters);
+    let filteredDatasets = filterDatasets(mockDatasets, searchQuery, filters);
+    
+    // Filter by network if provided
+    if (network) {
+      filteredDatasets = filteredDatasets.filter(dataset => dataset.network === network);
+    }
     
     // Pagination
     const startIndex = (page - 1) * limit;
@@ -687,14 +693,15 @@ const mockApi = {
 
 // Real API functions
 const realApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string): Promise<PaginatedDatasets> {
-    console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token });
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string, network?: 'mainnet' | 'calibration'): Promise<PaginatedDatasets> {
+    console.log('🚀 getDatasets called with:', { searchQuery, filters, page, limit, hasToken: !!token, network });
     console.log('🌐 API_BASE_URL:', API_BASE_URL);
     
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
       if (filters.tags && filters.tags.length > 0) params.append('tags', filters.tags.join(','));
+      if (network) params.append('network', network);
       params.append('page', page.toString());
       params.append('limit', limit.toString());
 
@@ -942,19 +949,19 @@ const realApi = {
 
 // Main API client that switches between real and mock
 export const apiClient = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 10, token?: string, network?: 'mainnet' | 'calibration'): Promise<PaginatedDatasets> {
     try {
       if (USE_MOCK_DATA) {
         console.log('🔄 Using mock data for getDatasets');
-        return await mockApi.getDatasets(searchQuery, filters, page, limit);
+        return await mockApi.getDatasets(searchQuery, filters, page, limit, token, network);
       } else {
         console.log('🔄 Using real API for getDatasets');
-        return await realApi.getDatasets(searchQuery, filters, page, limit, token);
+        return await realApi.getDatasets(searchQuery, filters, page, limit, token, network);
       }
     } catch (error) {
       console.warn('Real API failed, falling back to mock data:', error);
       console.log('🔄 Falling back to mock data for getDatasets due to real API failure.');
-      return await mockApi.getDatasets(searchQuery, filters, page, limit);
+      return await mockApi.getDatasets(searchQuery, filters, page, limit, token, network);
     }
   },
 

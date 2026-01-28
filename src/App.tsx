@@ -1,6 +1,7 @@
 import { ErrorBoundary } from '@components/ErrorBoundary';
 import { PerformanceMonitor } from '@components/PerformanceMonitor';
 import { AuthProvider } from './contexts/AuthContext';
+import { NetworkProvider } from './contexts/NetworkContext';
 import { AuthenticatedApp } from './components/AuthenticatedApp';
 import { Toaster } from '@components/ui/sonner';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -11,13 +12,15 @@ export default function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/explore" element={<AuthenticatedApp />} />
-            <Route path="/admin" element={<AuthenticatedApp />} />
-          </Routes>
-          <PerformanceMonitor />
-          <Toaster />
+          <NetworkProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/explore" element={<AuthenticatedApp />} />
+              <Route path="/admin" element={<AuthenticatedApp />} />
+            </Routes>
+            <PerformanceMonitor />
+            <Toaster />
+          </NetworkProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

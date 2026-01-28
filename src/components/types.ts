@@ -12,6 +12,7 @@ export interface Dataset {
   projectUrl?: string; // Project website URL from manifest
   files?: FileStructure[]; // File structure for explore feature
   pieces?: Piece[]; // Pieces from manifest format
+  network?: 'mainnet' | 'calibration'; // Filecoin network
 }
 
 export interface Piece {

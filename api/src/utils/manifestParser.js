@@ -99,6 +99,7 @@ export const parseManifest = (manifestData) => {
       tags: manifestData.tags || [],
       fileStructure: fileStructure,
       status: 'pending', // Always start as pending
+      network: 'mainnet', // Default to mainnet for new datasets
       // Manifest-specific fields
       manifestData: manifestData,
       spec: manifestData['@spec'],

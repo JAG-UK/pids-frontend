@@ -8,6 +8,8 @@ import { Dataset, ViewMode } from '@components/types';
 import { LoadingSpinner } from '@components/LoadingSpinner';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from '../contexts/AuthContext';
+import { useNetwork } from '../contexts/NetworkContext';
+import { NetworkSwitcher } from './NetworkSwitcher';
 import { apiClient, isUsingMockData } from '../utils/apiClient';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -174,6 +176,7 @@ export const mockDatasets: Dataset[] = [
 export function AuthenticatedApp() {
   console.log('🚀 AuthenticatedApp component rendered');
   const { isAuthenticated, isLoading: authLoading, login, logout, user, hasRole, keycloak } = useAuth();
+  const { network } = useNetwork();
   const [isAdminMode, setIsAdminMode] = useLocalStorage('isAdminMode', false);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
@@ -184,14 +187,14 @@ export function AuthenticatedApp() {
   // Load datasets from API
   const loadDatasets = useCallback(async () => {
     console.log('🔄 AuthenticatedApp: loadDatasets called');
-    console.log('🔍 AuthenticatedApp: Auth state:', { isAuthenticated, isAdminMode, hasToken: !!keycloak?.token });
+    console.log('🔍 AuthenticatedApp: Auth state:', { isAuthenticated, isAdminMode, hasToken: !!keycloak?.token, network });
     console.log('🔍 AuthenticatedApp: Token value:', keycloak?.token ? 'present' : 'none');
     setIsLoading(true);
     try {
       // Get token if user is authenticated
       const token = keycloak?.token;
-      console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none');
-      const result = await apiClient.getDatasets('', { tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token);
+      console.log('📞 AuthenticatedApp: Calling apiClient.getDatasets() with token:', token ? 'present' : 'none', 'network:', network);
+      const result = await apiClient.getDatasets('', { tags: [], dateRange: 'all', sizeRange: 'all' }, 1, 10, token, network);
       console.log('📊 AuthenticatedApp: loadDatasets result:', result);
       console.log('📊 AuthenticatedApp: Number of datasets in result:', result.datasets?.length || 0);
       console.log('📊 AuthenticatedApp: Datasets array:', result.datasets);
@@ -212,7 +215,7 @@ export function AuthenticatedApp() {
       console.log('🏁 AuthenticatedApp: loadDatasets completed, setting isLoading to false');
       setIsLoading(false);
     }
-  }, [isAuthenticated, isAdminMode]);
+  }, [isAuthenticated, isAdminMode, network, keycloak?.token]);
 
   useEffect(() => {
     loadDatasets();
@@ -466,6 +469,9 @@ export function AuthenticatedApp() {
                 </div>
               )}
               
+              {/* Network switcher */}
+              <NetworkSwitcher />
+              
               {/* User info and auth buttons */}
               <div className="flex items-center gap-2">
                 {isAuthenticated && (
@@ -475,18 +481,18 @@ export function AuthenticatedApp() {
                 )}
                 
                 {isAuthenticated ? (
-                  <Button variant="outline" onClick={logout}>
+                  <Button variant="outline" onClick={logout} className="shadow-md">
                     Logout
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={login}>
+                  <Button variant="outline" onClick={login} className="shadow-md">
                     Login
                   </Button>
                 )}
                 
                 <Button
                   variant={isAdminMode ? "default" : "outline"}
-                  className={isAdminMode ? "bg-chart-1 hover:bg-chart-1/90 text-white" : ""}
+                  className={`shadow-md ${isAdminMode ? "bg-chart-1 hover:bg-chart-1/90 text-white" : ""}`}
                   onClick={() => {
                     if (isAdminMode) {
                       setIsAdminMode(false);

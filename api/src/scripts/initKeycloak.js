@@ -518,4 +518,3 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
       process.exit(1);
     });
 }
-

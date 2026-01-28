@@ -87,9 +87,23 @@ router.post('/upload-manifest', upload.single('manifest'), async (req, res) => {
       });
     }
     
+    // Override network from query param if provided
+    const { network } = req.query;
+    if (network) {
+      if (!['mainnet', 'calibration'].includes(network)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid network. Must be \"mainnet\" or \"calibration\"'
+        });
+      }
+      datasetData.network = network;
+    } else {
+      datasetData.network = 'mainnet'; // Probably :)
+    }
+
     // Add manifest file path to dataset
     datasetData.manifestFile = manifestFilePath;
-    
+
     // Create dataset in database
     try {
       const dataset = new Dataset(datasetData);
@@ -126,7 +140,7 @@ router.post('/upload-manifest', upload.single('manifest'), async (req, res) => {
 // GET /api/datasets - Get datasets (filtered by authentication)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { search, format, tags, page = 1, limit = 20 } = req.query;
+    const { search, format, tags, network, page = 1, limit = 20 } = req.query;
     
     console.log('🔍 GET /api/datasets - Auth state:', { 
       hasUser: !!req.user, 
@@ -157,6 +171,8 @@ router.get('/', optionalAuth, async (req, res) => {
       const tagArray = tags.split(',').map(tag => tag.trim());
       query.tags = { $in: tagArray };
     }
+    
+    query.network = network || 'mainnet';
     
     console.log('🔍 Final query:', JSON.stringify(query, null, 2));
     
@@ -451,5 +467,7 @@ router.put('/:id/reject', authenticateToken, requireAdmin, async (req, res) => {
     });
   }
 });
+
+
 
 export default router; 

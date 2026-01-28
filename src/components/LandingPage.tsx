@@ -20,7 +20,7 @@ const LandingPage: React.FC = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/toad.png')`
+          backgroundImage: `url('/images/hexagons.png')`
         }}
       />
       
@@ -29,12 +29,12 @@ const LandingPage: React.FC = () => {
       
       {/* Additional gradient for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      
+
       {/* Content */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center text-white">
         {/* Main Title */}
         <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl">
-          TOADS Dataset Directory
+          Filecoin Dataset Directory
         </h1>
         
         {/* Subtitle/Blurb */}
@@ -42,7 +42,8 @@ const LandingPage: React.FC = () => {
           Discover Open Access Datasets stored on the Filecoin network. 
           Access high-quality data from climate research to population statistics, 
           WWW archives to warzone journalism.
-
+        </p>
+        <p className="mb-12 max-w-3xl text-xl leading-relaxed md:text-2xl lg:text-3xl">  
           Decentralized • Permanent • Accessible
         </p>
 
@@ -84,7 +85,7 @@ const LandingPage: React.FC = () => {
       </div>
       
       <div className="absolute bottom-8 right-8 text-white/30 text-sm">
-        <p>Filecoin Incentive Design Labs</p>
+        <p>Image by pngtree.com</p>
       </div>
     </div>
   );

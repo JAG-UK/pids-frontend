@@ -6,6 +6,7 @@
   --font-size: 14px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
+  --title: oklch(0.3971 0.2368 264.21);
   --card: #ffffff;
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -27,15 +28,15 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
-  /* Purple-based color scheme */
-  --chart-1: oklch(0.488 0.243 288); /* Primary purple #6911DD */
-  --chart-1-75: oklch(0.558 0.182 288); /* 75% variant */
-  --chart-1-50: oklch(0.628 0.122 288); /* 50% variant */
-  --chart-1-25: oklch(0.698 0.061 288); /* 25% variant */
+  /* Blue-based color scheme */
+  --chart-1: oklch(0.3971 0.2368 264.21); /* Primary navy blue */
+  --chart-1-75: oklch(0.558 0.182 245); /* 75% variant */
+  --chart-1-50: oklch(0.628 0.122 245); /* 50% variant */
+  --chart-1-25: oklch(0.698 0.061 245); /* 25% variant */
   --chart-2: oklch(0.6 0.118 184.704); /* Keep teal */
   --chart-3: oklch(0.398 0.07 227.392); /* Keep yellow */
   --chart-4: oklch(0.75 0.15 130); /* Success green #80DD37 */
-  --chart-5: oklch(0.627 0.265 303.9); /* Accent purple #BB11DD */
+  --chart-5: oklch(0.627 0.265 235); /* Accent slate blue */
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -50,6 +51,7 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
+  --title: oklch(0.3971 0.2368 264.21);
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
@@ -69,18 +71,18 @@
   --ring: oklch(0.439 0 0);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  /* Dark mode purple colors */
-  --chart-1: oklch(0.588 0.243 288); /* Lighter primary purple for dark mode */
-  --chart-1-75: oklch(0.628 0.182 288);
-  --chart-1-50: oklch(0.668 0.122 288);
-  --chart-1-25: oklch(0.708 0.061 288);
+  /* Dark mode blue colors */
+  --chart-1: oklch(0.588 0.243 245); /* Lighter primary navy blue for dark mode */
+  --chart-1-75: oklch(0.628 0.182 245);
+  --chart-1-50: oklch(0.668 0.122 245);
+  --chart-1-25: oklch(0.708 0.061 245);
   --chart-2: oklch(0.696 0.17 162.48); /* Keep teal */
   --chart-3: oklch(0.769 0.188 70.08); /* Keep yellow */
   --chart-4: oklch(0.65 0.15 130); /* Success green for dark mode */
-  --chart-5: oklch(0.727 0.265 303.9); /* Accent purple for dark mode */
+  --chart-5: oklch(0.727 0.265 235); /* Accent slate blue for dark mode */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 288);
+  --sidebar-primary: oklch(0.488 0.243 245);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);

@@ -9,6 +9,7 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        title: "var(--title)",
         card: {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",

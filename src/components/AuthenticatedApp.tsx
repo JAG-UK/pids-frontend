@@ -469,8 +469,8 @@ export function AuthenticatedApp() {
                 </div>
               )}
               
-              {/* Network switcher */}
-              <NetworkSwitcher />
+              {/* Network switcher - hidden in explore view */}
+              {viewMode !== 'explore' && <NetworkSwitcher />}
               
               {/* User info and auth buttons */}
               <div className="flex items-center gap-2">

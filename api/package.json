@@ -1,7 +1,7 @@
 {
   "name": "pids-api",
   "version": "1.0.0",
-  "description": "TOADS Directory API Server",
+  "description": "Filecoin Commons Dataset Directory API Server",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

@@ -13,6 +13,7 @@ export interface Dataset {
   files?: FileStructure[]; // File structure for explore feature
   pieces?: Piece[]; // Pieces from manifest format
   network?: 'mainnet' | 'calibration'; // Filecoin network
+  manifestFile?: string; // Path to manifest file in MinIO
 }
 
 export interface Piece {

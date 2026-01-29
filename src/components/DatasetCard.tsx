@@ -18,6 +18,30 @@ export function DatasetCard({
   const [showMetadata, setShowMetadata] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const handleDownloadManifest = async () => {
+    try {
+      const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
+      const response = await fetch(`${API_BASE_URL}/files/manifests/${dataset.id}_manifest.json`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download manifest: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `manifest-${dataset.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading manifest:', error);
+      alert('Failed to download manifest file. Please try again.');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -294,7 +318,11 @@ export function DatasetCard({
                 </Button>
               )}
               
-              <Button size="sm" className="flex-1 bg-chart-1 hover:bg-chart-1/90 text-white">
+              <Button 
+                size="sm" 
+                className="flex-1 bg-chart-1 hover:bg-chart-1/90 text-white"
+                onClick={handleDownloadManifest}
+              >
                 <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>

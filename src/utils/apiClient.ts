@@ -604,7 +604,7 @@ const filterDatasets = (datasets: Dataset[], searchQuery: string, filters: Searc
 
 // Mock API functions
 const mockApi = {
-  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, token?: string, network?: 'mainnet' | 'calibration'): Promise<PaginatedDatasets> {
+  async getDatasets(searchQuery: string = '', filters: SearchFilters = { tags: [], dateRange: 'all', sizeRange: 'all' }, page: number = 1, limit: number = 20, _token?: string, network?: 'mainnet' | 'calibration'): Promise<PaginatedDatasets> {
     // Simulate network delay
     await delay(300);
     

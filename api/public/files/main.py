@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Main application entry point for the TOADS Dataset Directory backend.
+Main application entry point for the Dataset Directory backend.
 
 This module provides the core functionality for finding and indexing
-datasets in TOADS (The Open Access Dataset Standard) directory.
+datasets in the Filecoin Commons Datasets directory.
 """
 
 import json

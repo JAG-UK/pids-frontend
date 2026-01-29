@@ -26,7 +26,7 @@ export function AdminDashboard({
         <Card className="border-l-4 border-l-chart-4">
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-chart-4">{approvedDatasets.length}</div>
-            <p className="text-sm text-muted-foreground">Verified Datasets</p>
+            <p className="text-sm text-muted-foreground">Approved Datasets</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-chart-1">

@@ -54,7 +54,7 @@ export function DatasetCard({
     if (dataset.status === 'approved' && dataset.verifiedDate) {
       return (
         <Badge variant="default" className="text-xs bg-chart-4 hover:bg-chart-4/90 text-white">
-          Verified {formatDate(dataset.verifiedDate)}
+          {formatDate(dataset.verifiedDate)}
         </Badge>
       );
     } else if (dataset.status === 'pending') {
@@ -265,7 +265,7 @@ export function DatasetCard({
                       </div>
                       {dataset.status === 'approved' && dataset.verifiedDate && (
                         <div>
-                          <label className="text-sm font-medium">Verified Date</label>
+                          <label className="text-sm font-medium">Approved Date</label>
                           <p className="text-sm text-muted-foreground">{formatDate(dataset.verifiedDate)}</p>
                         </div>
                       )}

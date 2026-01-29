@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "TOADS Dataset Directory",
+    "name": "Filecoin Commons Dataset Directory",
     "version": "1.0.0",
-    "description": "Directory of Open Access Datasets stored on the Filecoin network"
+    "description": "Directory of Commons Datasets stored on the Filecoin network"
   },
   "server": {
     "port": 3000,
